@@ -153,6 +153,41 @@ export class HoldemTable {
     }
   }
 
+  public switchSeat(playerId: string, targetSeatIndex: number): void {
+    this.assertSeatIndex(targetSeatIndex);
+    const currentSeatIndex = this.findSeatByPlayerId(playerId);
+    if (currentSeatIndex === null) {
+      throw new Error("Player is not seated");
+    }
+    if (currentSeatIndex === targetSeatIndex) {
+      return;
+    }
+    if (this.seats[targetSeatIndex]) {
+      throw new Error("Seat is already occupied");
+    }
+    if (this.hand && this.status === "active") {
+      throw new Error("Cannot switch seats during an active hand");
+    }
+
+    const seat = this.mustSeat(currentSeatIndex);
+    seat.seatIndex = targetSeatIndex;
+    this.seats[targetSeatIndex] = seat;
+    this.seats[currentSeatIndex] = null;
+
+    if (this.dealerSeat === currentSeatIndex) {
+      this.dealerSeat = targetSeatIndex;
+    }
+  }
+
+  public renamePlayer(playerId: string, newName: string): void {
+    const seatIndex = this.findSeatByPlayerId(playerId);
+    if (seatIndex === null) {
+      return;
+    }
+    const seat = this.mustSeat(seatIndex);
+    seat.playerName = newName;
+  }
+
   public toggleSitOut(playerId: string, sitOut: boolean): void {
     const seatIndex = this.findSeatByPlayerId(playerId);
     if (seatIndex === null) {
