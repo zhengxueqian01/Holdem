@@ -32,6 +32,7 @@ interface LegalAction {
 interface TableState {
   id: string;
   name: string;
+  hostPlayerId: string | null;
   status: "waiting" | "active";
   maxSeats: number;
   smallBlind: number;
@@ -135,7 +136,6 @@ const actionClassMap: Record<ActionType, string> = {
 };
 
 const CHIP_DENOMS = [1000, 500, 100, 25, 5, 1];
-const CHIP_PICK_DENOMS = [5, 10, 25, 50, 100, 500];
 
 const chipBreakdown = (amount: number, denoms = [1000, 500, 100, 50, 25, 10, 5, 1]): Array<{ denom: number; count: number }> => {
   let remain = Math.max(0, Math.floor(amount));
@@ -151,17 +151,22 @@ const chipBreakdown = (amount: number, denoms = [1000, 500, 100, 50, 25, 10, 5, 
 };
 
 const seatAngleDeg = (index: number, totalSeats: number): number => {
-  const safeTotal = Math.max(2, totalSeats);
-  return -90 + (360 / safeTotal) * index;
+  const safeTotal = Math.max(1, totalSeats);
+  const startDeg = -170;
+  const endDeg = -10;
+  if (safeTotal === 1) {
+    return (startDeg + endDeg) / 2;
+  }
+  return startDeg + ((endDeg - startDeg) * index) / (safeTotal - 1);
 };
 
 const seatRingStyle = (index: number, totalSeats: number): CSSProperties => {
   const angleDeg = seatAngleDeg(index, totalSeats);
   const angle = (angleDeg * Math.PI) / 180;
-  const radiusX = 39;
-  const radiusY = 28;
+  const radiusX = 40;
+  const radiusY = 21;
   const left = 50 + Math.cos(angle) * radiusX;
-  const top = 47 + Math.sin(angle) * radiusY;
+  const top = 46 + Math.sin(angle) * radiusY;
   return {
     left: `${left}%`,
     top: `${top}%`
@@ -295,8 +300,10 @@ export function App(): JSX.Element {
   const [actionAmount, setActionAmount] = useState(50);
   const [statusText, setStatusText] = useState("未连接");
   const [errorText, setErrorText] = useState("");
+  const [loginBusy, setLoginBusy] = useState(false);
   const [turnDeadlineMs, setTurnDeadlineMs] = useState<number | null>(null);
   const [remainingMs, setRemainingMs] = useState(0);
+  const [hideOwnCards, setHideOwnCards] = useState(false);
   const [dealBursts, setDealBursts] = useState<DealBurst[]>([]);
   const [betBursts, setBetBursts] = useState<BetBurst[]>([]);
   const [boardDealSlots, setBoardDealSlots] = useState<number[]>([]);
@@ -669,26 +676,45 @@ export function App(): JSX.Element {
   }, [tableState?.status, tableState?.hand?.handId, tableState?.hand?.board.length]);
 
   const loginGuest = async (): Promise<void> => {
-    setErrorText("");
-    const response = await fetch(`${API_URL}/api/auth/guest`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: nameInput.trim() })
-    });
-    const data = await response.json();
-    if (data.error) {
-      setErrorText(data.error);
+    if (loginBusy) {
       return;
     }
-    setToken(data.token);
-    setPlayer({
-      id: String(data.player.id),
-      name: String(data.player.name),
-      isAdmin: Boolean(data.player.isAdmin)
-    });
+    const trimmedName = nameInput.trim();
+    if (!trimmedName) {
+      setErrorText("请输入昵称");
+      return;
+    }
+    setLoginBusy(true);
+    setErrorText("");
+    try {
+      const response = await fetch(`${API_URL}/api/auth/guest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: trimmedName })
+      });
+      const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+      if (!response.ok || data.error) {
+        setErrorText(String(data.error ?? "登录失败，请检查服务状态"));
+        return;
+      }
+      setToken(String(data.token ?? ""));
+      setPlayer({
+        id: String((data.player as Record<string, unknown>)?.id ?? ""),
+        name: String((data.player as Record<string, unknown>)?.name ?? trimmedName),
+        isAdmin: Boolean((data.player as Record<string, unknown>)?.isAdmin)
+      });
+    } catch {
+      setErrorText("无法连接后端，请先启动服务（npm run dev:server）");
+    } finally {
+      setLoginBusy(false);
+    }
   };
 
   const returnToNameInput = (): void => {
+    if (selectedTableId && tableState) {
+      setErrorText("进入牌桌后不能切换用户，请先返回大厅");
+      return;
+    }
     wsRef.current?.close();
     setToken("");
     setPlayer(null);
@@ -700,6 +726,7 @@ export function App(): JSX.Element {
     setAdminQuery("");
     setAdminNewName("");
     setAdminNameDrafts({});
+    setHideOwnCards(false);
   };
 
   const createAdminUser = async (): Promise<void> => {
@@ -910,8 +937,18 @@ export function App(): JSX.Element {
   };
 
   const startHand = async (): Promise<void> => {
-    if (!selectedTableId) {
+    if (!selectedTableId || !tableState) {
       return;
+    }
+    if (!tableState.hostPlayerId || player?.id !== tableState.hostPlayerId) {
+      setErrorText("仅房主可以开始新一手");
+      return;
+    }
+    if (tableState.status === "waiting" && tableState.lastCompletedHand) {
+      const confirmed = window.confirm("上一手已结束，确认开始下一手吗？");
+      if (!confirmed) {
+        return;
+      }
     }
     const response = await fetch(`${API_URL}/api/tables/${selectedTableId}/start-hand`, {
       method: "POST",
@@ -959,9 +996,8 @@ export function App(): JSX.Element {
   const mySeat = tableState?.seats.find((seat) => seat?.playerId === player?.id) ?? null;
   const currentBoard = tableState?.hand?.board ?? [];
   const completedBoard = tableState?.lastCompletedHand?.board ?? [];
-  const board = currentBoard.length > 0 ? currentBoard : completedBoard;
-  const boardLabel = currentBoard.length > 0 ? "公共牌" : completedBoard.length > 0 ? "上一手公共牌" : "公共牌";
-  const showingCompletedBoard = currentBoard.length === 0 && completedBoard.length > 0;
+  const showingCompletedBoard = tableState?.status === "waiting" && currentBoard.length === 0 && completedBoard.length > 0;
+  const board = currentBoard.length > 0 ? currentBoard : showingCompletedBoard ? completedBoard : [];
   const lastCompletedWinners = tableState?.lastCompletedHand?.result?.winners ?? [];
   const actorSeatIndex = tableState?.hand?.currentActorSeat ?? null;
   const dealerSeatIndex = tableState?.hand?.dealerSeat ?? null;
@@ -974,6 +1010,10 @@ export function App(): JSX.Element {
     (action) => action.type === "bet" || action.type === "raise"
   );
   const mySeatIndex = mySeat?.seatIndex ?? -1;
+  const hostPlayerId = tableState?.hostPlayerId ?? null;
+  const hostSeat = hostPlayerId ? tableState?.seats.find((seat) => seat?.playerId === hostPlayerId) ?? null : null;
+  const isHostPlayer = Boolean(player && hostPlayerId && player.id === hostPlayerId);
+  const hasHandStarted = (tableState?.handCount ?? 0) > 0;
   const myHoleCards = mySeat?.holeCards ?? [];
   const countdownSec = Math.max(0, Math.ceil(remainingMs / 1000));
   const tableStatusClass = tableState?.status === "active" ? "active" : "waiting";
@@ -993,6 +1033,14 @@ export function App(): JSX.Element {
   );
   const normalizedActionAmount = Math.max(0, Math.min(Math.floor(actionAmount || 0), actionAmountMax));
   const sizingActionAmount = hasSizingActions ? Math.max(actionAmountMin, normalizedActionAmount) : 0;
+  const halfPotTarget = Math.max(
+    actionAmountMin,
+    Math.min(actionAmountMax, Math.floor((tableState?.hand?.pot ?? 0) / 2))
+  );
+  const potTarget = Math.max(
+    actionAmountMin,
+    Math.min(actionAmountMax, Math.floor(tableState?.hand?.pot ?? actionAmountMin))
+  );
   const draftedBreakdown = chipBreakdown(normalizedActionAmount);
   const remainingChipBreakdown = chipBreakdown(Math.max(0, (mySeat?.stack ?? 0) - normalizedActionAmount));
   const boardDealOrder = new Map<number, number>();
@@ -1025,8 +1073,14 @@ export function App(): JSX.Element {
   };
 
   const leaveTableView = (): void => {
+    if (hasHandStarted) {
+      setErrorText("牌局开始后不能返回大厅");
+      return;
+    }
     setSelectedTableId("");
     setTableState(null);
+    setHideOwnCards(false);
+    void refreshTables();
   };
 
   if (!token || !player) {
@@ -1038,17 +1092,23 @@ export function App(): JSX.Element {
           <p className="eyebrow">ONLINE HOLD'EM</p>
           <h1>进入牌桌大厅</h1>
           <p className="muted">创建游客身份后即可创建桌子、入座并开始对局。</p>
-          <div className="auth-row">
+          <form
+            className="auth-row"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void loginGuest();
+            }}
+          >
             <input
               className="text-input"
               value={nameInput}
               onChange={(event) => setNameInput(event.target.value)}
               placeholder="你的昵称"
             />
-            <button className="btn btn-primary" onClick={() => void loginGuest()}>
-              进入
+            <button className="btn btn-primary" type="submit" disabled={loginBusy}>
+              {loginBusy ? "进入中..." : "进入"}
             </button>
-          </div>
+          </form>
           {errorText ? <p className="error">{errorText}</p> : null}
         </section>
       </main>
@@ -1067,11 +1127,6 @@ export function App(): JSX.Element {
             <p className="muted">
               当前玩家: {player.name} ({player.id.slice(0, 8)}) {player.isAdmin ? "· 管理员" : ""}
             </p>
-          </div>
-          <div className="topbar-actions">
-            <button className="btn btn-ghost" onClick={returnToNameInput}>
-              返回输入用户名
-            </button>
           </div>
         </header>
       ) : null}
@@ -1289,11 +1344,13 @@ export function App(): JSX.Element {
                   <div className="table-felt">
                     {inTableView ? (
                       <div className="table-corner-ui">
-                        <button className="btn btn-ghost table-exit-btn" onClick={leaveTableView}>
+                        <button
+                          className="btn btn-ghost table-exit-btn"
+                          onClick={leaveTableView}
+                          disabled={hasHandStarted}
+                          title={hasHandStarted ? "牌局开始后不能返回大厅" : "返回大厅"}
+                        >
                           返回大厅
-                        </button>
-                        <button className="btn btn-ghost table-exit-btn" onClick={returnToNameInput}>
-                          切换用户
                         </button>
                       </div>
                     ) : null}
@@ -1301,6 +1358,9 @@ export function App(): JSX.Element {
                     <div className="table-hud">
                       <div className="center-info-row">
                         <span className="center-pill">桌名 {tableState.name}</span>
+                        <span className="center-pill host-pill">
+                          房主 {hostSeat?.playerName ?? (hostPlayerId ? `玩家${hostPlayerId.slice(0, 6)}` : "待定")}
+                        </span>
                         <span className={`center-pill state ${tableStatusClass}`}>
                           状态 {tableState.status === "active" ? "进行中" : "等待中"}
                         </span>
@@ -1343,7 +1403,7 @@ export function App(): JSX.Element {
                         const seatChips = buildChipStack(seat?.stack ?? 0);
                         const seatPos = seatRingStyle(index, ringSeatCount);
                         const canClickToJoin = !seat && mySeatIndex === -1;
-                        const canClickToSwitch = !seat && mySeatIndex !== -1 && mySeatIndex !== index;
+                        const canClickToSwitch = !seat && mySeatIndex !== -1 && mySeatIndex !== index && !hasHandStarted;
                         const canClickEmpty = canClickToJoin || canClickToSwitch;
                         return (
                           <li
@@ -1406,7 +1466,7 @@ export function App(): JSX.Element {
                                       {seat.allIn ? <span className="badge warn-badge">all-in</span> : null}
                                     </div>
                                     <div className="ring-cards">
-                                      {seat.holeCards.length ? seat.holeCards.map(cardLabel).join(" ") : "?? ??"}
+                                      {seat.holeCards.length && !(isMine && hideOwnCards) ? seat.holeCards.map(cardLabel).join(" ") : "?? ??"}
                                     </div>
                                   </>
                                 ) : (
@@ -1464,7 +1524,21 @@ export function App(): JSX.Element {
                     ) : null}
 
                     <div className="table-center">
-                      <p className={`board-label ${showingCompletedBoard ? "previous" : ""}`}>{boardLabel}</p>
+                      <div className="pot-chip-zone">
+                        <div className="pot-chip-stack">
+                          {buildChipStack(tableState.hand?.pot ?? 0, 14).map((chip, chipIndex) => (
+                            <span
+                              key={`pot-chip-${chip}-${chipIndex}`}
+                              className={`chip-token pot-chip ${chipClassFor(chip)}`}
+                              style={{
+                                bottom: chipIndex * 2,
+                                left: chipIndex * 2
+                              }}
+                            />
+                          ))}
+                        </div>
+                        <span className="pot-label">底池 {tableState.hand?.pot ?? 0}</span>
+                      </div>
                       <div className="board-strip table-board">
                         {board.length ? (
                           board.map((card, idx) => {
@@ -1490,21 +1564,6 @@ export function App(): JSX.Element {
                           <span className="board-empty">(空)</span>
                         )}
                       </div>
-                      <div className="pot-chip-zone">
-                        <div className="pot-chip-stack">
-                          {buildChipStack(tableState.hand?.pot ?? 0, 14).map((chip, chipIndex) => (
-                            <span
-                              key={`pot-chip-${chip}-${chipIndex}`}
-                              className={`chip-token pot-chip ${chipClassFor(chip)}`}
-                              style={{
-                                bottom: chipIndex * 2,
-                                left: chipIndex * 2
-                              }}
-                            />
-                          ))}
-                        </div>
-                        <span className="pot-label">底池 {tableState.hand?.pot ?? 0}</span>
-                      </div>
                       {showingCompletedBoard && lastWinnerText ? (
                         <div className="winner-strip">
                           <span className="winner-title">上一手赢家</span>
@@ -1521,14 +1580,17 @@ export function App(): JSX.Element {
                           </>
                         ) : (
                           <>
-                            <span className="dock-note">
-                              你在座位 #{mySeat.seatIndex} · 当前筹码 {mySeat.stack} · 点击空位可换座
-                            </span>
+                            <span className="stack-display">剩余筹码 {mySeat.stack}</span>
                             <button className="btn btn-ghost" onClick={() => void leaveSeat()}>
                               离座
                             </button>
-                            <button className="btn btn-primary" onClick={() => void startHand()}>
-                              开始一手
+                            <button
+                              className="btn btn-primary start-hand-btn"
+                              onClick={() => void startHand()}
+                              disabled={!isHostPlayer || tableState.status === "active"}
+                              title={isHostPlayer ? "由房主开始新一手" : "仅房主可以开始新一手"}
+                            >
+                              {tableState.lastCompletedHand ? "确认开始下一局" : "开始一手"}
                             </button>
                           </>
                         )}
@@ -1538,7 +1600,7 @@ export function App(): JSX.Element {
                         <div className="table-dock-row my-hand-row">
                           <span className="dock-note">我的手牌</span>
                           <div className="my-cards-strip">
-                            {myHoleCards.length > 0
+                            {!hideOwnCards && myHoleCards.length > 0
                               ? myHoleCards.map((card, idx) => (
                                   <span key={`my-hole-${card.rank}-${card.suit}-${idx}`} className="my-card">
                                     {cardLabel(card)}
@@ -1550,6 +1612,9 @@ export function App(): JSX.Element {
                                   </span>
                                 ))}
                           </div>
+                          <button className="btn btn-ghost anti-peek-btn" onClick={() => setHideOwnCards((prev) => !prev)}>
+                            {hideOwnCards ? "显示手牌" : "防窥屏"}
+                          </button>
                         </div>
                       ) : null}
 
@@ -1578,24 +1643,24 @@ export function App(): JSX.Element {
                                   onChange={(event) => clampActionAmount(Number(event.target.value))}
                                 />
                               </label>
+                              <div className="amount-slider-wrap">
+                                <input
+                                  className="amount-slider"
+                                  type="range"
+                                  min={actionAmountMin}
+                                  max={actionAmountMax}
+                                  step={1}
+                                  value={sizingActionAmount}
+                                  onChange={(event) => clampActionAmount(Number(event.target.value))}
+                                  disabled={actionAmountMax <= actionAmountMin}
+                                />
+                                <div className="amount-slider-scale">
+                                  <span>{actionAmountMin}</span>
+                                  <strong>{sizingActionAmount}</strong>
+                                  <span>{actionAmountMax}</span>
+                                </div>
+                              </div>
                               <div className="chip-picker-row">
-                                {CHIP_PICK_DENOMS.map((denom) => (
-                                  <button
-                                    key={`pick-${denom}`}
-                                    type="button"
-                                    className={`chip-pick-btn ${chipClassFor(denom)}`}
-                                    onClick={() => clampActionAmount(normalizedActionAmount + denom)}
-                                  >
-                                    +{denom}
-                                  </button>
-                                ))}
-                                <button
-                                  type="button"
-                                  className="chip-pick-btn chip-white"
-                                  onClick={() => clampActionAmount(Math.max(0, normalizedActionAmount - 10))}
-                                >
-                                  -10
-                                </button>
                                 <button
                                   type="button"
                                   className="chip-pick-btn chip-blue"
@@ -1605,10 +1670,24 @@ export function App(): JSX.Element {
                                 </button>
                                 <button
                                   type="button"
+                                  className="chip-pick-btn chip-red"
+                                  onClick={() => clampActionAmount(halfPotTarget)}
+                                >
+                                  1/2池
+                                </button>
+                                <button
+                                  type="button"
+                                  className="chip-pick-btn chip-green"
+                                  onClick={() => clampActionAmount(potTarget)}
+                                >
+                                  底池
+                                </button>
+                                <button
+                                  type="button"
                                   className="chip-pick-btn chip-gold"
                                   onClick={() => clampActionAmount(actionAmountMax)}
                                 >
-                                  全下
+                                  最大
                                 </button>
                               </div>
                               <div className="chip-breakdown-row">

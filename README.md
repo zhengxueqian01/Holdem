@@ -16,19 +16,56 @@ Authoritative online no-limit Texas Hold'em MVP with realtime table sync.
 npm install
 ```
 
-2. Start server:
+2. Configure environment variables (optional but recommended):
+
+```bash
+cp .env.example .env
+```
+
+The server will automatically search common locations for `.env` (including repository root).  
+If your process starts from a custom working directory, set `DOTENV_CONFIG_PATH=/absolute/path/to/.env`.
+
+3. Start server:
 
 ```bash
 npm run dev:server
 ```
 
-3. In another terminal, start web:
+4. In another terminal, start web:
 
 ```bash
 npm run dev:web
 ```
 
-4. Open `http://localhost:5173`.
+5. Open `http://localhost:5173`.
+
+## Admin Usage
+
+Set admin usernames via `.env`:
+
+```env
+ADMIN_USERNAMES=admin,alice,bob
+```
+
+Rules:
+
+- Username matching is case-insensitive (`admin` == `Admin`).
+- If you login with an admin username, you get admin privileges automatically.
+- Admin identity is grouped by configured name (for example `admin` appears as one admin user group in management).
+
+What admin can do in UI/API:
+
+- Search users: `GET /api/admin/users?q=xxx`
+- Create user: `POST /api/admin/users`
+- Rename user: `PATCH /api/admin/users/:playerId`
+- Delete user: `DELETE /api/admin/users/:playerId`
+- Close table: `DELETE /api/admin/tables/:tableId`
+
+Game flow constraints:
+
+- First player who seats at a table becomes the host.
+- Only host can start a new hand.
+- After a hand has started on a table, seat switching is disabled.
 
 ## Implemented Capabilities
 
