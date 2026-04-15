@@ -252,6 +252,44 @@ const chipClassFor = (chip: number): string => {
   return "chip-white";
 };
 
+const avatarPalette = [
+  ["#f59e0b", "#facc15"],
+  ["#ec4899", "#fb7185"],
+  ["#14b8a6", "#2dd4bf"],
+  ["#3b82f6", "#60a5fa"],
+  ["#8b5cf6", "#a78bfa"],
+  ["#ef4444", "#f87171"]
+];
+
+const hashName = (value: string): number => {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
+  }
+  return hash;
+};
+
+const avatarDataUrl = (name: string): string => {
+  const seed = hashName(name || "player");
+  const [start, end] = avatarPalette[seed % avatarPalette.length];
+  const label = encodeURIComponent((name.trim().charAt(0) || "?").toUpperCase());
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+      <defs>
+        <linearGradient id="g" x1="0%" x2="100%" y1="0%" y2="100%">
+          <stop offset="0%" stop-color="${start}" />
+          <stop offset="100%" stop-color="${end}" />
+        </linearGradient>
+      </defs>
+      <rect width="96" height="96" rx="48" fill="url(#g)" />
+      <circle cx="48" cy="36" r="18" fill="rgba(255,255,255,0.24)" />
+      <path d="M18 82c4-16 17-24 30-24s26 8 30 24" fill="rgba(15,23,42,0.2)" />
+      <text x="48" y="56" text-anchor="middle" font-size="34" font-family="Arial, sans-serif" font-weight="700" fill="white">${label}</text>
+    </svg>
+  `.trim();
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+};
+
 const describeLegalActions = (legalActions: LegalAction[]): string => {
   if (legalActions.length === 0) {
     return "当前不是你的回合或暂无可执行动作。";
@@ -1433,30 +1471,20 @@ export function App(): JSX.Element {
                                     "--seat-body-rotate": `${bodyRotate}deg`
                                   } as CSSProperties
                                 }
-                              >
-                                {seat ? (
-                                  <>
-                                    <div className="ring-seat-head">
-                                      <strong>
-                                        #{seat.seatIndex} {seat.playerName}
-                                      </strong>
-                                      <div className="ring-seat-head-badges">
-                                        {isDealer ? <span className="seat-role-badge dealer">D</span> : null}
-                                        {isSmallBlind ? <span className="seat-role-badge small-blind">SB</span> : null}
-                                        {isBigBlind ? <span className="seat-role-badge big-blind">BB</span> : null}
-                                        {isActor ? <span className="actor-badge">行动中</span> : null}
-                                      </div>
-                                    </div>
-                                    <div className="ring-chip-stack">
-                                      {seatChips.map((chip, chipIndex) => (
-                                        <span
-                                          key={`${seat.seatIndex}-chip-${chip}-${chipIndex}`}
-                                          className={`chip-token ${chipClassFor(chip)}`}
-                                          style={{
-                                            bottom: chipIndex * 3,
-                                            left: chipIndex % 2 === 0 ? 0 : 2
-                                          }}
+                                >
+                                  {seat ? (
+                                    <>
+                                      <span className="seat-stack-badge">{seat.stack.toLocaleString()}</span>
+                                      {seat.betThisStreet > 0 ? (
+                                        <span className="seat-bet-badge">下注 {seat.betThisStreet.toLocaleString()}</span>
+                                      ) : null}
+                                      <div className="ring-seat-avatar-wrap">
+                                        <img
+                                          className="ring-seat-avatar"
+                                          src={avatarDataUrl(seat.playerName)}
+                                          alt={`${seat.playerName} avatar`}
                                         />
+<<<<<<< HEAD
                                       ))}
                                     </div>
                                     <div className="ring-seat-meta">
@@ -1469,6 +1497,39 @@ export function App(): JSX.Element {
                                       {seat.holeCards.length && !(isMine && hideOwnCards) ? seat.holeCards.map(cardLabel).join(" ") : "?? ??"}
                                     </div>
                                   </>
+=======
+                                        <div className="ring-chip-stack">
+                                          {seatChips.map((chip, chipIndex) => (
+                                            <span
+                                              key={`${seat.seatIndex}-chip-${chip}-${chipIndex}`}
+                                              className={`chip-token ${chipClassFor(chip)}`}
+                                              style={{
+                                                bottom: chipIndex * 3,
+                                                left: chipIndex % 2 === 0 ? 0 : 2
+                                              }}
+                                            />
+                                          ))}
+                                        </div>
+                                        <div className="ring-seat-head-badges">
+                                          {isDealer ? <span className="seat-role-badge dealer">D</span> : null}
+                                          {isSmallBlind ? <span className="seat-role-badge small-blind">SB</span> : null}
+                                          {isBigBlind ? <span className="seat-role-badge big-blind">BB</span> : null}
+                                          {isActor ? <span className="actor-badge">行动中</span> : null}
+                                        </div>
+                                      </div>
+                                      <div className="ring-seat-head">
+                                        <strong>{seat.playerName}</strong>
+                                        <span className="seat-index-label">#{seat.seatIndex}</span>
+                                      </div>
+                                      <div className="ring-seat-meta">
+                                        {seat.folded ? <span className="badge muted-badge">folded</span> : null}
+                                        {seat.allIn ? <span className="badge warn-badge">all-in</span> : null}
+                                      </div>
+                                      <div className="ring-cards">
+                                        {seat.holeCards.length ? seat.holeCards.map(cardLabel).join(" ") : "?? ??"}
+                                      </div>
+                                    </>
+>>>>>>> 577cc9c (refactor: 更改了ui)
                                 ) : (
                                   <span className="ring-empty">
                                     {canClickToSwitch ? `换到 #${index}` : `空位 #${index}`}

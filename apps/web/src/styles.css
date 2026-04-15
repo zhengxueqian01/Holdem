@@ -1079,7 +1079,11 @@ label {
 .ring-seat {
   position: absolute;
   transform: translate(-50%, -50%);
+<<<<<<< HEAD
   width: clamp(104px, 11vw, 142px);
+=======
+  width: clamp(126px, 13vw, 168px);
+>>>>>>> 577cc9c (refactor: 更改了ui)
   color: #e5e7eb;
   pointer-events: none;
 }
@@ -1101,28 +1105,24 @@ label {
 .ring-seat-shell {
   position: relative;
   width: 100%;
+<<<<<<< HEAD
   border-radius: 10px;
   padding: 6px;
+=======
+  border-radius: 16px;
+  padding: 22px 8px 8px;
+>>>>>>> 577cc9c (refactor: 更改了ui)
   border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(2, 6, 12, 0.5);
+  background: rgba(2, 6, 12, 0.22);
   backdrop-filter: blur(2px);
-  overflow: hidden;
+  overflow: visible;
   transform: rotate(var(--seat-shell-rotate, 0deg));
   transform-origin: center center;
   box-shadow: 0 8px 12px rgba(2, 6, 23, 0.35);
 }
 
 .ring-seat-shell::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: -7px;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-bottom: 8px solid rgba(248, 250, 252, 0.7);
+  display: none;
 }
 
 .ring-seat-body {
@@ -1130,6 +1130,8 @@ label {
   transform-origin: center center;
   display: grid;
   gap: 6px;
+  justify-items: center;
+  position: relative;
 }
 
 .ring-seat.occupied .ring-seat-shell {
@@ -1158,18 +1160,86 @@ label {
   display: none;
 }
 
+.seat-stack-badge,
+.seat-bet-badge {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-weight: 800;
+  text-align: center;
+  box-shadow: 0 8px 18px rgba(2, 6, 23, 0.3);
+}
+
+.seat-stack-badge {
+  top: -14px;
+  min-width: 88px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 18px;
+  line-height: 1;
+  color: #f8fafc;
+  text-shadow: 0 1px 0 rgba(15, 23, 42, 0.4);
+}
+
+.seat-bet-badge {
+  top: 12px;
+  z-index: 3;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  color: #111827;
+  background: linear-gradient(135deg, #fef08a, #f59e0b);
+}
+
+.ring-seat-avatar-wrap {
+  position: relative;
+  width: 82px;
+  height: 82px;
+  display: grid;
+  place-items: center;
+}
+
+.ring-seat-avatar {
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.78);
+  box-shadow:
+    0 10px 20px rgba(2, 6, 23, 0.34),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.18);
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.16);
+}
+
 .ring-seat-head {
+<<<<<<< HEAD
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 6px;
   font-size: 10px;
+=======
+  width: min(100%, 122px);
+  display: grid;
+  gap: 3px;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.78);
+  text-align: center;
+>>>>>>> 577cc9c (refactor: 更改了ui)
 }
 
 .ring-seat-head-badges {
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 4px;
+  z-index: 2;
 }
 
 .ring-seat-head strong {
@@ -1178,6 +1248,14 @@ label {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  font-size: 14px;
+  color: #bfdbfe;
+}
+
+.seat-index-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
 }
 
 .seat-role-badge {
@@ -1214,8 +1292,10 @@ label {
 }
 
 .ring-seat-meta {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-height: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 4px 6px;
   font-size: 9px;
   color: #cbd5e1;
@@ -1235,6 +1315,8 @@ label {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: center;
+  max-width: 100%;
 }
 
 .ring-empty {
@@ -1242,9 +1324,17 @@ label {
 }
 
 .ring-chip-stack {
+<<<<<<< HEAD
   position: relative;
   width: 34px;
   height: 24px;
+=======
+  position: absolute;
+  right: -6px;
+  bottom: -2px;
+  width: 46px;
+  height: 32px;
+>>>>>>> 577cc9c (refactor: 更改了ui)
 }
 
 .deal-overlay,
@@ -1566,15 +1656,34 @@ label {
   }
 
   .ring-seat-shell {
-    padding: 6px;
+    padding: 18px 6px 6px;
   }
 
   .ring-seat-head {
-    font-size: 11px;
+    width: min(100%, 108px);
+    padding: 6px 8px;
   }
 
   .ring-seat-head-badges {
     gap: 3px;
+  }
+
+  .ring-seat-avatar-wrap,
+  .ring-seat-avatar {
+    width: 64px;
+    height: 64px;
+  }
+
+  .seat-stack-badge {
+    min-width: 70px;
+    font-size: 14px;
+    padding: 4px 8px;
+  }
+
+  .seat-bet-badge {
+    top: 8px;
+    font-size: 10px;
+    padding: 3px 7px;
   }
 
   .seat-role-badge {
