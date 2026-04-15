@@ -67,6 +67,9 @@ const envSchema = z.object({
 });
 
 const env = envSchema.parse(process.env);
+const corsOrigins = env.CORS_ORIGIN.split(",")
+  .map((origin) => origin.trim())
+  .filter((origin) => origin.length > 0);
 const port = Number.parseInt(env.SERVER_PORT, 10);
 if (!Number.isFinite(port) || port <= 0) {
   throw new Error("Invalid SERVER_PORT");
@@ -76,7 +79,13 @@ const app = express();
 app.use(express.json({ limit: "512kb" }));
 app.use(
   cors({
-    origin: env.CORS_ORIGIN
+    origin(origin, callback) {
+      if (!origin || corsOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(`CORS origin not allowed: ${origin}`));
+    }
   })
 );
 
@@ -427,17 +436,17 @@ app.post("/api/auth/guest", (req, res) => {
   const session: Session =
     existingAdmin !== null
       ? {
-          token,
-          playerId: existingAdmin.playerId,
-          playerName: existingAdmin.playerName,
-          createdAt: existingAdmin.createdAt
-        }
+        token,
+        playerId: existingAdmin.playerId,
+        playerName: existingAdmin.playerName,
+        createdAt: existingAdmin.createdAt
+      }
       : {
-          token,
-          playerId,
-          playerName,
-          createdAt: new Date().toISOString()
-        };
+        token,
+        playerId,
+        playerName,
+        createdAt: new Date().toISOString()
+      };
   sessions.set(token, session);
   res.json({
     token,

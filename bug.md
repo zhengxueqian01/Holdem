@@ -8,3 +8,7 @@
 2.apps/web/src/App.tsx的第107行，这里读不到env里的VITE_API_URL
   const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 
+# 改进
+
+1.落座后，自己的视角在中间，每个人的顺序不变，但是不同的人的视图会有变化
+2.
