@@ -1,5 +1,7 @@
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import dotenv from "dotenv";
 import cors from "cors";
 import express, { type Request, type Response } from "express";
@@ -7,7 +9,29 @@ import { z } from "zod";
 import { WebSocketServer, type WebSocket } from "ws";
 import { HoldemTable, type ActionInput, type LegalAction, type PlayerProfile } from "@holdem/poker";
 
-dotenv.config();
+const loadEnv = (): void => {
+  const candidates = [
+    process.env.DOTENV_CONFIG_PATH,
+    path.resolve(process.cwd(), ".env"),
+    path.resolve(process.cwd(), "apps/server/.env"),
+    path.resolve(process.cwd(), "..", ".env"),
+    path.resolve(process.cwd(), "../.env"),
+    path.resolve(process.cwd(), "../../.env"),
+    path.resolve(process.cwd(), "../../../.env")
+  ].filter((value): value is string => Boolean(value));
+
+  for (const candidate of candidates) {
+    if (!existsSync(candidate)) {
+      continue;
+    }
+    dotenv.config({ path: candidate });
+    return;
+  }
+
+  dotenv.config();
+};
+
+loadEnv();
 
 interface Session {
   token: string;
@@ -668,6 +692,11 @@ app.post("/api/tables/:tableId/start-hand", (req, res) => {
   try {
     const session = req.session as Session;
     const table = ensureTable(req.params.tableId);
+    const hostPlayerId = table.getHostPlayerId();
+    if (!hostPlayerId || hostPlayerId !== session.playerId) {
+      res.status(403).json({ error: "仅房主可以开始新一手" });
+      return;
+    }
     const state = table.startHand();
     res.json({ table: table.getPublicState(session.playerId), started: state.hand?.handId });
     broadcastTableState(table.id);

@@ -64,6 +64,7 @@ export class HoldemTable {
   private readonly seats: Array<SeatState | null>;
   private readonly history: HandHistoryRecord[];
   private dealerSeat: number | null;
+  private hostPlayerId: string | null;
   private handCount: number;
   private status: TableStatus;
   private hand: InternalHandState | null;
@@ -97,6 +98,7 @@ export class HoldemTable {
     this.seats = Array.from({ length: config.maxSeats }, () => null);
     this.history = [];
     this.dealerSeat = null;
+    this.hostPlayerId = null;
     this.handCount = 0;
     this.status = "waiting";
     this.hand = null;
@@ -129,6 +131,9 @@ export class HoldemTable {
       holeCards: [],
       actedThisStreet: false
     };
+    if (this.hostPlayerId === null) {
+      this.hostPlayerId = player.id;
+    }
   }
 
   public leaveSeat(playerId: string): void {
@@ -151,10 +156,16 @@ export class HoldemTable {
     if (this.dealerSeat === seatIndex) {
       this.dealerSeat = null;
     }
+    if (this.hostPlayerId === playerId) {
+      this.reassignHostPlayer();
+    }
   }
 
   public switchSeat(playerId: string, targetSeatIndex: number): void {
     this.assertSeatIndex(targetSeatIndex);
+    if (this.handCount > 0) {
+      throw new Error("牌局开始后不可换座");
+    }
     const currentSeatIndex = this.findSeatByPlayerId(playerId);
     if (currentSeatIndex === null) {
       throw new Error("Player is not seated");
@@ -473,6 +484,7 @@ export class HoldemTable {
     return {
       id: this.id,
       name: this.name,
+      hostPlayerId: this.hostPlayerId,
       status: this.status,
       maxSeats: this.maxSeats,
       smallBlind: this.smallBlind,
@@ -501,6 +513,7 @@ export class HoldemTable {
     return {
       id: state.id,
       name: state.name,
+      hostPlayerId: state.hostPlayerId,
       status: state.status,
       maxSeats: state.maxSeats,
       smallBlind: state.smallBlind,
@@ -519,6 +532,10 @@ export class HoldemTable {
       return null;
     }
     return this.mustSeat(hand.currentActorSeat).playerId;
+  }
+
+  public getHostPlayerId(): string | null {
+    return this.hostPlayerId;
   }
 
   public seatOfPlayer(playerId: string): number | null {
@@ -1026,6 +1043,13 @@ export class HoldemTable {
 
   private seatedCount(): number {
     return this.seats.filter(Boolean).length;
+  }
+
+  private reassignHostPlayer(): void {
+    const nextHostSeat = this.seats
+      .filter((seat): seat is SeatState => Boolean(seat))
+      .sort((a, b) => a.seatIndex - b.seatIndex)[0];
+    this.hostPlayerId = nextHostSeat?.playerId ?? null;
   }
 
   private requireActionAmount(amount: number | undefined): number {

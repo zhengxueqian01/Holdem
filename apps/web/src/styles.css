@@ -517,10 +517,10 @@ label {
 .countdown {
   font-weight: 800;
   color: #0b4d7a;
-  font-size: 26px;
+  font-size: 36px;
   line-height: 1;
   letter-spacing: 0.01em;
-  padding: 4px 10px;
+  padding: 6px 14px;
   border-radius: 999px;
   background: rgba(219, 234, 254, 0.86);
   border: 1px solid rgba(125, 211, 252, 0.68);
@@ -534,29 +534,29 @@ label {
 }
 
 .board-strip {
-  min-height: 96px;
+  min-height: 154px;
   border: 1px solid rgba(255, 255, 255, 0.34);
-  border-radius: 16px;
-  padding: 12px;
+  border-radius: 20px;
+  padding: 18px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 15px;
   background: rgba(3, 18, 14, 0.36);
   box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
 }
 
 .board-card {
-  min-width: 80px;
+  min-width: 96px;
   text-align: center;
-  padding: 15px 14px;
-  border-radius: 12px;
+  padding: 18px 16px;
+  border-radius: 14px;
   border: 1px solid #cfd8e6;
   background: linear-gradient(165deg, #ffffff, #eef2f7);
   color: #0f172a;
   font-weight: 800;
-  font-size: 30px;
+  font-size: 36px;
   line-height: 1;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
   box-shadow: 0 6px 12px rgba(2, 6, 23, 0.26);
@@ -585,7 +585,7 @@ label {
 
 .board-label {
   margin: 0;
-  font-size: 30px;
+  font-size: 42px;
   line-height: 1.05;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -701,12 +701,12 @@ label {
 .table-center {
   position: absolute;
   left: 50%;
-  top: 54%;
+  top: 53%;
   transform: translate(-50%, -50%);
   z-index: 3;
-  width: min(720px, 74%);
+  width: min(1280px, 88%);
   display: grid;
-  gap: 10px;
+  gap: 14px;
   justify-items: center;
   color: #f8fafc;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
@@ -714,7 +714,7 @@ label {
 }
 
 .page-table-mode .table-center {
-  width: min(880px, 78%);
+  width: min(1500px, 92%);
 }
 
 .table-dock {
@@ -730,8 +730,8 @@ label {
 }
 
 .page-table-mode .table-dock {
-  width: min(900px, 74%);
-  bottom: 1.8%;
+  width: min(980px, 68%);
+  bottom: 0.8%;
 }
 
 .table-dock-row {
@@ -767,12 +767,22 @@ label {
   color: #d1fae5;
 }
 
+.stack-display {
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 900;
+  color: #e0f2fe;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 8px rgba(2, 6, 23, 0.5);
+}
+
 .table-dock-row .btn {
   padding: 8px 12px;
 }
 
 .action-row {
   align-items: center;
+  gap: 8px;
 }
 
 .action-row-head {
@@ -791,12 +801,12 @@ label {
 }
 
 .action-row-deadline {
-  font-size: 24px;
+  font-size: 34px;
   line-height: 1;
   color: #fef3c7;
   font-weight: 800;
   letter-spacing: 0.01em;
-  padding: 4px 10px;
+  padding: 6px 14px;
   border-radius: 999px;
   background: rgba(120, 53, 15, 0.35);
   border: 1px solid rgba(251, 191, 36, 0.48);
@@ -810,28 +820,55 @@ label {
 
 .chip-amount-block {
   display: grid;
-  gap: 5px;
+  gap: 8px;
   min-width: min(520px, 100%);
 }
 
 .action-size-confirm {
-  justify-self: start;
+  justify-self: stretch;
+  min-height: 44px;
+  font-size: 15px;
+}
+
+.amount-slider-wrap {
+  display: grid;
+  gap: 4px;
+}
+
+.amount-slider {
+  width: 100%;
+  accent-color: #f59e0b;
+  cursor: pointer;
+}
+
+.amount-slider-scale {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #dbeafe;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.amount-slider-scale strong {
+  color: #fde68a;
+  font-size: 14px;
 }
 
 .chip-picker-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 .chip-pick-btn {
-  min-width: 58px;
+  min-width: 74px;
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 999px;
-  padding: 6px 10px;
+  padding: 8px 12px;
   color: #f8fafc;
   font-weight: 800;
-  font-size: 12px;
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -855,6 +892,7 @@ label {
 .my-hand-row {
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
 
 .my-cards-strip {
@@ -922,6 +960,25 @@ label {
   color: #ede9fe;
 }
 
+.center-pill.host-pill {
+  border-color: rgba(129, 140, 248, 0.75);
+  color: #e0e7ff;
+}
+
+.host-note {
+  color: #bfdbfe;
+}
+
+.start-hand-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(0.1);
+}
+
+.anti-peek-btn {
+  white-space: nowrap;
+}
+
 .center-turn-panel {
   width: 100%;
   border-radius: 12px;
@@ -971,18 +1028,19 @@ label {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
 }
 
 .pot-chip-stack {
   position: relative;
-  width: 64px;
-  height: 40px;
+  width: 112px;
+  height: 72px;
 }
 
 .pot-label {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
 }
 
 .winner-strip {
@@ -1021,7 +1079,7 @@ label {
 .ring-seat {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: clamp(142px, 15vw, 186px);
+  width: clamp(104px, 11vw, 142px);
   color: #e5e7eb;
   pointer-events: none;
 }
@@ -1043,8 +1101,8 @@ label {
 .ring-seat-shell {
   position: relative;
   width: 100%;
-  border-radius: 12px;
-  padding: 8px;
+  border-radius: 10px;
+  padding: 6px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(2, 6, 12, 0.5);
   backdrop-filter: blur(2px);
@@ -1105,7 +1163,7 @@ label {
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .ring-seat-head-badges {
@@ -1124,8 +1182,8 @@ label {
 
 .seat-role-badge {
   border-radius: 999px;
-  padding: 2px 7px;
-  font-size: 10px;
+  padding: 1px 6px;
+  font-size: 9px;
   font-weight: 800;
   color: #111827;
   background: #e5e7eb;
@@ -1147,8 +1205,8 @@ label {
 
 .actor-badge {
   border-radius: 999px;
-  padding: 2px 7px;
-  font-size: 10px;
+  padding: 1px 6px;
+  font-size: 9px;
   font-weight: 800;
   color: #111827;
   background: linear-gradient(135deg, #fde68a, #f59e0b);
@@ -1159,7 +1217,7 @@ label {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4px 6px;
-  font-size: 10px;
+  font-size: 9px;
   color: #cbd5e1;
 }
 
@@ -1171,7 +1229,7 @@ label {
 }
 
 .ring-cards {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 700;
   color: #a7f3d0;
   white-space: nowrap;
@@ -1180,13 +1238,13 @@ label {
 }
 
 .ring-empty {
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .ring-chip-stack {
   position: relative;
-  width: 46px;
-  height: 32px;
+  width: 34px;
+  height: 24px;
 }
 
 .deal-overlay,
@@ -1290,6 +1348,9 @@ label {
 
 .action-btn {
   color: #fff;
+  min-height: 44px;
+  min-width: 108px;
+  font-size: 14px;
 }
 
 .action-check {
@@ -1546,6 +1607,15 @@ label {
     font-size: 22px;
   }
 
+  .pot-chip-stack {
+    width: 86px;
+    height: 56px;
+  }
+
+  .pot-label {
+    font-size: 20px;
+  }
+
   .table-hud {
     top: 1.2%;
     width: min(320px, 84%);
@@ -1579,6 +1649,10 @@ label {
     font-size: 16px;
   }
 
+  .stack-display {
+    font-size: 22px;
+  }
+
   .center-pill {
     font-size: 8px;
     padding: 2px 6px;
@@ -1593,8 +1667,8 @@ label {
   }
 
   .countdown {
-    font-size: 19px;
-    padding: 3px 8px;
+    font-size: 26px;
+    padding: 4px 10px;
   }
 
   .center-turn-desc,
@@ -1609,8 +1683,8 @@ label {
   }
 
   .action-row-deadline {
-    font-size: 18px;
-    padding: 3px 8px;
+    font-size: 24px;
+    padding: 4px 10px;
   }
 
   .lobby-stage {

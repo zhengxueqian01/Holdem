@@ -106,6 +106,7 @@ export interface CompletedHandSummary {
 export interface PublicTableState {
   id: string;
   name: string;
+  hostPlayerId: string | null;
   status: TableStatus;
   maxSeats: number;
   smallBlind: number;
