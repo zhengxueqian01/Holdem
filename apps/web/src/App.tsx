@@ -1471,65 +1471,50 @@ export function App(): JSX.Element {
                                     "--seat-body-rotate": `${bodyRotate}deg`
                                   } as CSSProperties
                                 }
-                                >
-                                  {seat ? (
-                                    <>
-                                      <span className="seat-stack-badge">{seat.stack.toLocaleString()}</span>
-                                      {seat.betThisStreet > 0 ? (
-                                        <span className="seat-bet-badge">下注 {seat.betThisStreet.toLocaleString()}</span>
-                                      ) : null}
-                                      <div className="ring-seat-avatar-wrap">
-                                        <img
-                                          className="ring-seat-avatar"
-                                          src={avatarDataUrl(seat.playerName)}
-                                          alt={`${seat.playerName} avatar`}
-                                        />
-<<<<<<< HEAD
-                                      ))}
+                              >
+                                {seat ? (
+                                  <>
+                                    <span className="seat-stack-badge">{seat.stack.toLocaleString()}</span>
+                                    {seat.betThisStreet > 0 ? (
+                                      <span className="seat-bet-badge">下注 {seat.betThisStreet.toLocaleString()}</span>
+                                    ) : null}
+                                    <div className="ring-seat-avatar-wrap">
+                                      <img
+                                        className="ring-seat-avatar"
+                                        src={avatarDataUrl(seat.playerName)}
+                                        alt={`${seat.playerName} avatar`}
+                                      />
+                                      <div className="ring-chip-stack">
+                                        {seatChips.map((chip, chipIndex) => (
+                                          <span
+                                            key={`${seat.seatIndex}-chip-${chip}-${chipIndex}`}
+                                            className={`chip-token ${chipClassFor(chip)}`}
+                                            style={{
+                                              bottom: chipIndex * 3,
+                                              left: chipIndex % 2 === 0 ? 0 : 2
+                                            }}
+                                          />
+                                        ))}
+                                      </div>
+                                      <div className="ring-seat-head-badges">
+                                        {isDealer ? <span className="seat-role-badge dealer">D</span> : null}
+                                        {isSmallBlind ? <span className="seat-role-badge small-blind">SB</span> : null}
+                                        {isBigBlind ? <span className="seat-role-badge big-blind">BB</span> : null}
+                                        {isActor ? <span className="actor-badge">行动中</span> : null}
+                                      </div>
+                                    </div>
+                                    <div className="ring-seat-head">
+                                      <strong>{seat.playerName}</strong>
+                                      <span className="seat-index-label">#{seat.seatIndex}</span>
                                     </div>
                                     <div className="ring-seat-meta">
-                                      <span>筹码 {seat.stack}</span>
-                                      <span>下注 {seat.betThisStreet}</span>
                                       {seat.folded ? <span className="badge muted-badge">folded</span> : null}
                                       {seat.allIn ? <span className="badge warn-badge">all-in</span> : null}
                                     </div>
                                     <div className="ring-cards">
-                                      {seat.holeCards.length && !(isMine && hideOwnCards) ? seat.holeCards.map(cardLabel).join(" ") : "?? ??"}
+                                      {seat.holeCards.length ? seat.holeCards.map(cardLabel).join(" ") : "?? ??"}
                                     </div>
                                   </>
-=======
-                                        <div className="ring-chip-stack">
-                                          {seatChips.map((chip, chipIndex) => (
-                                            <span
-                                              key={`${seat.seatIndex}-chip-${chip}-${chipIndex}`}
-                                              className={`chip-token ${chipClassFor(chip)}`}
-                                              style={{
-                                                bottom: chipIndex * 3,
-                                                left: chipIndex % 2 === 0 ? 0 : 2
-                                              }}
-                                            />
-                                          ))}
-                                        </div>
-                                        <div className="ring-seat-head-badges">
-                                          {isDealer ? <span className="seat-role-badge dealer">D</span> : null}
-                                          {isSmallBlind ? <span className="seat-role-badge small-blind">SB</span> : null}
-                                          {isBigBlind ? <span className="seat-role-badge big-blind">BB</span> : null}
-                                          {isActor ? <span className="actor-badge">行动中</span> : null}
-                                        </div>
-                                      </div>
-                                      <div className="ring-seat-head">
-                                        <strong>{seat.playerName}</strong>
-                                        <span className="seat-index-label">#{seat.seatIndex}</span>
-                                      </div>
-                                      <div className="ring-seat-meta">
-                                        {seat.folded ? <span className="badge muted-badge">folded</span> : null}
-                                        {seat.allIn ? <span className="badge warn-badge">all-in</span> : null}
-                                      </div>
-                                      <div className="ring-cards">
-                                        {seat.holeCards.length ? seat.holeCards.map(cardLabel).join(" ") : "?? ??"}
-                                      </div>
-                                    </>
->>>>>>> 577cc9c (refactor: 更改了ui)
                                 ) : (
                                   <span className="ring-empty">
                                     {canClickToSwitch ? `换到 #${index}` : `空位 #${index}`}
@@ -1612,8 +1597,8 @@ export function App(): JSX.Element {
                                 style={
                                   dealOrder !== undefined
                                     ? ({
-                                        "--board-deal-delay": `${dealOrder * 120}ms`
-                                      } as CSSProperties)
+                                      "--board-deal-delay": `${dealOrder * 120}ms`
+                                    } as CSSProperties)
                                     : undefined
                                 }
                               >
@@ -1663,15 +1648,15 @@ export function App(): JSX.Element {
                           <div className="my-cards-strip">
                             {!hideOwnCards && myHoleCards.length > 0
                               ? myHoleCards.map((card, idx) => (
-                                  <span key={`my-hole-${card.rank}-${card.suit}-${idx}`} className="my-card">
-                                    {cardLabel(card)}
-                                  </span>
-                                ))
+                                <span key={`my-hole-${card.rank}-${card.suit}-${idx}`} className="my-card">
+                                  {cardLabel(card)}
+                                </span>
+                              ))
                               : [0, 1].map((idx) => (
-                                  <span key={`my-hole-hidden-${idx}`} className="my-card hidden">
-                                    ??
-                                  </span>
-                                ))}
+                                <span key={`my-hole-hidden-${idx}`} className="my-card hidden">
+                                  ??
+                                </span>
+                              ))}
                           </div>
                           <button className="btn btn-ghost anti-peek-btn" onClick={() => setHideOwnCards((prev) => !prev)}>
                             {hideOwnCards ? "显示手牌" : "防窥屏"}
