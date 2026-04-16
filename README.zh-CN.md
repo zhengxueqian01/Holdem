@@ -2,6 +2,8 @@
 
 一个带实时牌桌同步的在线 No-Limit Texas Hold'em MVP，采用服务端权威状态模型。
 
+[English README](./README.md)
+
 ## 工作区结构
 
 - `apps/server`: 基于 Express + WebSocket 的权威服务端
