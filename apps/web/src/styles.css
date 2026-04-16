@@ -694,10 +694,15 @@ label {
   top: 1.4%;
 }
 
+.table-hud-countdown {
+  display: flex;
+  justify-content: center;
+}
+
 .table-center {
   position: absolute;
   left: 50%;
-  top: 53%;
+  top: 39%;
   transform: translate(-50%, -50%);
   z-index: 3;
   width: min(1280px, 88%);
@@ -711,6 +716,7 @@ label {
 
 .page-table-mode .table-center {
   width: min(1500px, 92%);
+  top: 36%;
 }
 
 .table-dock {
@@ -764,12 +770,18 @@ label {
 }
 
 .stack-display {
-  font-size: 28px;
+  font-size: 24px;
   line-height: 1;
   font-weight: 900;
   color: #e0f2fe;
   letter-spacing: 0.02em;
   text-shadow: 0 2px 8px rgba(2, 6, 23, 0.5);
+}
+
+.player-status-row {
+  justify-content: center;
+  align-items: center;
+  min-height: 58px;
 }
 
 .table-dock-row .btn {
@@ -888,25 +900,35 @@ label {
 .my-hand-row {
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.my-hand-meta {
+  display: grid;
+  gap: 4px;
+  min-width: 168px;
 }
 
 .my-cards-strip {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 12px;
+  flex: 1 1 auto;
 }
 
 .my-card {
-  min-width: 70px;
+  min-width: 78px;
   text-align: center;
-  padding: 12px 12px;
+  padding: 16px 14px;
   border-radius: 11px;
   border: 1px solid rgba(255, 255, 255, 0.75);
   background: linear-gradient(145deg, #ffffff, #e2e8f0);
   color: #0f172a;
   font-weight: 800;
-  font-size: 20px;
+  font-size: 24px;
   line-height: 1;
   text-shadow: none;
   box-shadow: 0 6px 10px rgba(2, 6, 23, 0.35);
@@ -989,6 +1011,8 @@ label {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  justify-content: flex-end;
+  min-width: 168px;
 }
 
 .reveal-toggle-btn {
@@ -1001,48 +1025,9 @@ label {
   color: #ccfbf1;
 }
 
-.center-turn-panel {
-  width: 100%;
-  border-radius: 12px;
-  border: 1px solid rgba(226, 232, 240, 0.28);
-  background: rgba(2, 6, 23, 0.48);
-  padding: 6px 9px;
-  display: grid;
-  gap: 3px;
-}
-
-.center-turn-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.center-turn-desc {
-  margin: 0;
-  text-align: center;
-  font-size: 11px;
-  color: #dbeafe;
-  line-height: 1.35;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.center-turn-legal {
-  margin: 0;
-  font-size: 10px;
-  color: #d1fae5;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .table-board {
-  width: 100%;
+  width: min(calc(5 * 130px + 4 * 15px + 36px), 100%);
+  flex-wrap: nowrap;
   justify-content: center;
 }
 
@@ -1729,6 +1714,7 @@ label {
   .table-center {
     width: min(520px, 86%);
     gap: 6px;
+    top: 35%;
   }
 
   .board-label {
@@ -1745,6 +1731,11 @@ label {
     min-width: 56px;
     padding: 10px 8px;
     font-size: 22px;
+  }
+
+  .table-board {
+    width: min(calc(5 * 74px + 4 * 7px + 14px), 100%);
+    flex-wrap: nowrap;
   }
 
   .pot-chip-stack {
@@ -1784,13 +1775,19 @@ label {
   }
 
   .my-card {
-    min-width: 56px;
-    padding: 10px 8px;
-    font-size: 16px;
+    min-width: 62px;
+    padding: 12px 10px;
+    font-size: 18px;
+  }
+
+  .my-hand-meta,
+  .hand-toggle-group {
+    min-width: 100%;
+    justify-content: flex-start;
   }
 
   .stack-display {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   .center-pill {
@@ -1798,22 +1795,9 @@ label {
     padding: 2px 6px;
   }
 
-  .center-turn-panel {
-    padding: 6px 8px;
-  }
-
-  .center-turn-top {
-    font-size: 10px;
-  }
-
   .countdown {
     font-size: 26px;
     padding: 4px 10px;
-  }
-
-  .center-turn-desc,
-  .center-turn-legal {
-    font-size: 9px;
   }
 
   .chip-pick-btn {

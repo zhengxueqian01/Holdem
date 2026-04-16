@@ -162,7 +162,47 @@ const seatAngleDeg = (index: number, totalSeats: number): number => {
   return startDeg + ((endDeg - startDeg) * index) / (safeTotal - 1);
 };
 
+const SEAT_POSITION_PRESETS: Record<number, Array<{ left: number; top: number }>> = {
+  2: [
+    { left: 34, top: 24 },
+    { left: 66, top: 24 }
+  ],
+  3: [
+    { left: 20, top: 42 },
+    { left: 50, top: 20 },
+    { left: 80, top: 42 }
+  ],
+  4: [
+    { left: 14, top: 48 },
+    { left: 34, top: 21 },
+    { left: 66, top: 21 },
+    { left: 86, top: 48 }
+  ],
+  5: [
+    { left: 10, top: 58 },
+    { left: 20, top: 38 },
+    { left: 50, top: 20 },
+    { left: 80, top: 38 },
+    { left: 90, top: 58 }
+  ],
+  6: [
+    { left: 7, top: 58 },
+    { left: 18, top: 41 },
+    { left: 36, top: 20 },
+    { left: 64, top: 20 },
+    { left: 82, top: 41 },
+    { left: 93, top: 58 }
+  ]
+};
+
 const seatRingStyle = (index: number, totalSeats: number): CSSProperties => {
+  const preset = SEAT_POSITION_PRESETS[totalSeats];
+  if (preset && preset[index]) {
+    return {
+      left: `${preset[index].left}%`,
+      top: `${preset[index].top}%`
+    };
+  }
   const angleDeg = seatAngleDeg(index, totalSeats);
   const angle = (angleDeg * Math.PI) / 180;
   const radiusX = 40;
@@ -290,44 +330,6 @@ const avatarDataUrl = (name: string): string => {
     </svg>
   `.trim();
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-};
-
-const describeLegalActions = (legalActions: LegalAction[]): string => {
-  if (legalActions.length === 0) {
-    return "当前不是你的回合或暂无可执行动作。";
-  }
-  return legalActions
-    .map((action) => {
-      const label = actionLabelMap[action.type];
-      if (action.type === "bet" || action.type === "raise") {
-        return `${label}(${action.minAmount}-${action.maxAmount})`;
-      }
-      if (action.type === "call") {
-        return `${label}(${action.toCall ?? 0})`;
-      }
-      return label;
-    })
-    .join(" / ");
-};
-
-const describeTurn = (state: TableState | null): string => {
-  if (!state || !state.hand || state.hand.currentActorSeat === null) {
-    return "当前无行动玩家。";
-  }
-
-  const actor = state.seats[state.hand.currentActorSeat];
-  if (!actor) {
-    return "当前行动席位为空。";
-  }
-
-  const toCall = Math.max(0, state.hand.currentBet - actor.betThisStreet);
-  if (toCall === 0) {
-    return `轮到 ${actor.playerName} 行动，可选择过牌、下注或全下。`;
-  }
-  if (actor.stack <= toCall) {
-    return `轮到 ${actor.playerName} 行动，需至少投入 ${toCall} 才能继续（可全下）。`;
-  }
-  return `轮到 ${actor.playerName} 行动，需跟注 ${toCall}，也可加注或弃牌。`;
 };
 
 export function App(): JSX.Element {
@@ -1064,8 +1066,6 @@ export function App(): JSX.Element {
   const smallBlindSeatIndex = tableState?.hand?.smallBlindSeat ?? null;
   const bigBlindSeatIndex = tableState?.hand?.bigBlindSeat ?? null;
   const actorSeat = actorSeatIndex !== null && tableState ? tableState.seats[actorSeatIndex] : null;
-  const turnDescription = describeTurn(tableState);
-  const legalActionDescription = describeLegalActions(tableState?.legalActions ?? []);
   const betSizingAction = (tableState?.legalActions ?? []).find(
     (action) => action.type === "bet" || action.type === "raise"
   );
@@ -1086,7 +1086,6 @@ export function App(): JSX.Element {
   const callAction = (tableState?.legalActions ?? []).find((action) => action.type === "call");
   const toCallAmount = callAction?.toCall ?? 0;
   const isMyTurn = Boolean(mySeat && actorSeat?.playerId === mySeat.playerId);
-  const showTurnPanel = tableState?.status === "active" && Boolean(actorSeat);
   const actionAmountMin = betSizingAction?.minAmount ?? 0;
   const actionAmountMax = Math.max(
     0,
@@ -1436,16 +1435,9 @@ export function App(): JSX.Element {
                         ) : null}
                       </div>
 
-                      {showTurnPanel ? (
-                        <div className="center-turn-panel">
-                          <div className="center-turn-top">
-                            <span>当前行动: {actorSeat ? `${actorSeat.playerName} (#${actorSeat.seatIndex})` : "-"}</span>
-                            <span className={countdownSec <= 5 ? "countdown danger" : "countdown"}>{countdownSec}s</span>
-                          </div>
-                          <p className="center-turn-desc">请在倒计时内完成动作</p>
-                          {mySeat && hasLegalActions ? (
-                            <p className="center-turn-legal">可执行: {legalActionDescription}</p>
-                          ) : null}
+                      {tableState.status === "active" ? (
+                        <div className="table-hud-countdown">
+                          <span className={countdownSec <= 5 ? "countdown danger" : "countdown"}>{countdownSec}s</span>
                         </div>
                       ) : null}
                     </div>
@@ -1646,32 +1638,12 @@ export function App(): JSX.Element {
                     </div>
 
                     <div className="table-dock">
-                      <div className="table-dock-row">
-                        {!mySeat ? (
-                          <>
-                            <span className="dock-note">点击任意空位入座，自动买入 {tableState.minBuyIn} 筹码</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="stack-display">剩余筹码 {mySeat.stack}</span>
-                            <button className="btn btn-ghost" onClick={() => void leaveSeat()}>
-                              离座
-                            </button>
-                            <button
-                              className="btn btn-primary start-hand-btn"
-                              onClick={() => void startHand()}
-                              disabled={!isHostPlayer || tableState.status === "active"}
-                              title={isHostPlayer ? "由房主开始新一手" : "仅房主可以开始新一手"}
-                            >
-                              {tableState.lastCompletedHand ? "确认开始下一局" : "开始一手"}
-                            </button>
-                          </>
-                        )}
-                      </div>
-
                       {mySeat ? (
                         <div className="table-dock-row my-hand-row">
-                          <span className="dock-note">我的手牌</span>
+                          <div className="my-hand-meta">
+                            <span className="dock-note">我的手牌</span>
+                            <span className="stack-display">剩余筹码 {mySeat.stack}</span>
+                          </div>
                           <div className="my-cards-strip">
                             {!hideOwnCards && myHoleCards.length > 0
                               ? myHoleCards.map((card, idx) => (
@@ -1702,6 +1674,26 @@ export function App(): JSX.Element {
                               {shouldRevealOnHandComplete ? "亮牌: 开" : "亮牌: 关"}
                             </button>
                           </div>
+                        </div>
+                      ) : null}
+
+                      {!mySeat ? (
+                        <div className="table-dock-row player-status-row">
+                          <span className="dock-note">点击任意空位入座，自动买入 {tableState.minBuyIn} 筹码</span>
+                        </div>
+                      ) : tableState.status !== "active" ? (
+                        <div className="table-dock-row player-status-row">
+                          <button className="btn btn-ghost" onClick={() => void leaveSeat()}>
+                            离座
+                          </button>
+                          <button
+                            className="btn btn-primary start-hand-btn"
+                            onClick={() => void startHand()}
+                            disabled={!isHostPlayer}
+                            title={isHostPlayer ? "由房主开始新一手" : "仅房主可以开始新一手"}
+                          >
+                            {tableState.lastCompletedHand ? "确认开始下一局" : "开始一手"}
+                          </button>
                         </div>
                       ) : null}
 
