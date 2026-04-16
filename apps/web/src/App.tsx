@@ -1073,7 +1073,7 @@ export function App(): JSX.Element {
   const hostPlayerId = tableState?.hostPlayerId ?? null;
   const hostSeat = hostPlayerId ? tableState?.seats.find((seat) => seat?.playerId === hostPlayerId) ?? null : null;
   const isHostPlayer = Boolean(player && hostPlayerId && player.id === hostPlayerId);
-  const hasHandStarted = (tableState?.handCount ?? 0) > 0;
+  const hasActiveHand = tableState?.status === "active" && Boolean(tableState?.hand);
   const myHoleCards = mySeat?.holeCards ?? [];
   const shouldRevealOnHandComplete = mySeat?.revealOnHandComplete ?? false;
   const countdownSec = Math.max(0, Math.ceil(remainingMs / 1000));
@@ -1134,7 +1134,7 @@ export function App(): JSX.Element {
   };
 
   const leaveTableView = (): void => {
-    if (hasHandStarted) {
+    if (hasActiveHand) {
       setErrorText("牌局开始后不能返回大厅");
       return;
     }
@@ -1408,8 +1408,8 @@ export function App(): JSX.Element {
                         <button
                           className="btn btn-ghost table-exit-btn"
                           onClick={leaveTableView}
-                          disabled={hasHandStarted}
-                          title={hasHandStarted ? "牌局开始后不能返回大厅" : "返回大厅"}
+                          disabled={hasActiveHand}
+                          title={hasActiveHand ? "牌局开始后不能返回大厅" : "返回大厅"}
                         >
                           返回大厅
                         </button>
@@ -1464,7 +1464,7 @@ export function App(): JSX.Element {
                         const seatChips = buildChipStack(seat?.stack ?? 0);
                         const seatPos = seatRingStyle(index, ringSeatCount);
                         const canClickToJoin = !seat && mySeatIndex === -1;
-                        const canClickToSwitch = !seat && mySeatIndex !== -1 && mySeatIndex !== index && !hasHandStarted;
+                        const canClickToSwitch = !seat && mySeatIndex !== -1 && mySeatIndex !== index && !hasActiveHand;
                         const canClickEmpty = canClickToJoin || canClickToSwitch;
                         return (
                           <li
