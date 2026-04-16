@@ -1475,7 +1475,9 @@ export function App(): JSX.Element {
                               >
                                 {seat ? (
                                   <>
-                                    <span className="seat-stack-badge">{seat.stack.toLocaleString()}</span>
+                                    <div className="seat-stack-row">
+                                      <span className="seat-stack-badge">{seat.stack.toLocaleString()}</span>
+                                    </div>
                                     <div className="ring-seat-avatar-wrap">
                                       <img
                                         className="ring-seat-avatar"

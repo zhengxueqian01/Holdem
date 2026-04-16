@@ -1108,7 +1108,7 @@ label {
   position: relative;
   width: 100%;
   border-radius: 16px;
-  padding: 22px 8px 8px;
+  padding: 18px 8px 8px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(2, 6, 12, 0.22);
   backdrop-filter: blur(2px);
@@ -1157,25 +1157,28 @@ label {
   display: none;
 }
 
-.seat-stack-badge {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  font-weight: 800;
-  text-align: center;
-  box-shadow: 0 8px 18px rgba(2, 6, 23, 0.3);
+.seat-stack-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 4px;
 }
 
 .seat-stack-badge {
-  top: -14px;
-  min-width: 88px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
+  max-width: 100%;
   padding: 5px 10px;
   border-radius: 999px;
   font-size: 18px;
   line-height: 1;
+  font-weight: 800;
   color: #f8fafc;
+  text-align: center;
   text-shadow: 0 1px 0 rgba(15, 23, 42, 0.4);
+  box-shadow: 0 8px 18px rgba(2, 6, 23, 0.3);
 }
 
 .seat-bet-row {
