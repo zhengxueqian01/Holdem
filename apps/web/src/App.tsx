@@ -1476,9 +1476,6 @@ export function App(): JSX.Element {
                                 {seat ? (
                                   <>
                                     <span className="seat-stack-badge">{seat.stack.toLocaleString()}</span>
-                                    {seat.betThisStreet > 0 ? (
-                                      <span className="seat-bet-badge">下注 {seat.betThisStreet.toLocaleString()}</span>
-                                    ) : null}
                                     <div className="ring-seat-avatar-wrap">
                                       <img
                                         className="ring-seat-avatar"
@@ -1508,6 +1505,11 @@ export function App(): JSX.Element {
                                       <strong>{seat.playerName}</strong>
                                       <span className="seat-index-label">#{seat.seatIndex}</span>
                                     </div>
+                                    {seat.betThisStreet > 0 ? (
+                                      <div className="seat-bet-row">
+                                        <span className="seat-bet-badge">下注 {seat.betThisStreet.toLocaleString()}</span>
+                                      </div>
+                                    ) : null}
                                     <div className="ring-seat-meta">
                                       {seat.folded ? <span className="badge muted-badge">folded</span> : null}
                                       {seat.allIn ? <span className="badge warn-badge">all-in</span> : null}
@@ -1649,7 +1651,10 @@ export function App(): JSX.Element {
                           <div className="my-cards-strip">
                             {!hideOwnCards && myHoleCards.length > 0
                               ? myHoleCards.map((card, idx) => (
-                                <span key={`my-hole-${card.rank}-${card.suit}-${idx}`} className="my-card">
+                                <span
+                                  key={`my-hole-${card.rank}-${card.suit}-${idx}`}
+                                  className={`my-card suit-${card.suit.toLowerCase()}`}
+                                >
                                   {cardLabel(card)}
                                 </span>
                               ))

@@ -912,6 +912,16 @@ label {
   box-shadow: 0 6px 10px rgba(2, 6, 23, 0.35);
 }
 
+.my-card.suit-h,
+.my-card.suit-d {
+  color: #dc2626;
+}
+
+.my-card.suit-s,
+.my-card.suit-c {
+  color: #111827;
+}
+
 .my-card.hidden {
   background: linear-gradient(145deg, #dbeafe, #bfdbfe);
   color: #1e40af;
@@ -1147,8 +1157,7 @@ label {
   display: none;
 }
 
-.seat-stack-badge,
-.seat-bet-badge {
+.seat-stack-badge {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -1169,14 +1178,26 @@ label {
   text-shadow: 0 1px 0 rgba(15, 23, 42, 0.4);
 }
 
+.seat-bet-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 2px;
+}
+
 .seat-bet-badge {
-  top: 12px;
-  z-index: 3;
-  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 68px;
+  padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
+  font-weight: 800;
+  line-height: 1.1;
   color: #111827;
   background: linear-gradient(135deg, #fef08a, #f59e0b);
+  box-shadow: 0 8px 18px rgba(2, 6, 23, 0.24);
 }
 
 .ring-seat-avatar-wrap {
