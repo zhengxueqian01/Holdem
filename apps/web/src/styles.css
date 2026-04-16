@@ -985,6 +985,22 @@ label {
   white-space: nowrap;
 }
 
+.hand-toggle-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.reveal-toggle-btn {
+  white-space: nowrap;
+}
+
+.reveal-toggle-btn.is-active {
+  border-color: rgba(45, 212, 191, 0.45);
+  background: rgba(13, 148, 136, 0.14);
+  color: #ccfbf1;
+}
+
 .center-turn-panel {
   width: 100%;
   border-radius: 12px;
@@ -1126,7 +1142,7 @@ label {
   transform: rotate(var(--seat-body-rotate, 0deg));
   transform-origin: center center;
   display: grid;
-  gap: 6px;
+  gap: 4px;
   justify-items: center;
   position: relative;
 }
@@ -1185,7 +1201,7 @@ label {
   display: flex;
   justify-content: center;
   width: 100%;
-  margin-top: 2px;
+  margin-top: 0;
 }
 
 .seat-bet-badge {
@@ -1227,7 +1243,7 @@ label {
   width: min(100%, 122px);
   display: grid;
   gap: 3px;
-  margin-top: 4px;
+  margin-top: 2px;
   padding: 8px 10px;
   border-radius: 8px;
   background: rgba(15, 23, 42, 0.78);
@@ -1295,13 +1311,16 @@ label {
 }
 
 .ring-seat-meta {
-  min-height: 20px;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 4px 6px;
   font-size: 9px;
   color: #cbd5e1;
+}
+
+.ring-seat-meta:empty {
+  display: none;
 }
 
 .ring-seat-meta span {

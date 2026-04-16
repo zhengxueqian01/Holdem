@@ -122,6 +122,7 @@ export class HoldemTable {
       playerId: player.id,
       playerName: player.name,
       stack: buyIn,
+      revealOnHandComplete: false,
       sitOut: false,
       inHand: false,
       folded: false,
@@ -206,6 +207,16 @@ export class HoldemTable {
     }
     const seat = this.mustSeat(seatIndex);
     seat.sitOut = sitOut;
+  }
+
+  public setRevealOnHandComplete(playerId: string, revealOnHandComplete: boolean): void {
+    const seatIndex = this.findSeatByPlayerId(playerId);
+    if (seatIndex === null) {
+      throw new Error("Player is not seated");
+    }
+    const seat = this.mustSeat(seatIndex);
+    seat.revealOnHandComplete = revealOnHandComplete;
+    this.syncLastCompletedHandReveals();
   }
 
   public startHand(): PublicTableState {
@@ -778,16 +789,27 @@ export class HoldemTable {
       result
     });
 
+    const showdownPlayerIds = result.winners.some((winner) => winner.reason === "showdown")
+      ? this.seats
+          .filter((seat): seat is SeatState => Boolean(seat))
+          .filter((seat) => seat.inHand && !seat.folded)
+          .map((seat) => seat.playerId)
+      : [];
+
     this.lastCompletedHand = {
       handId: hand.handId,
       completedAt,
       board: cloneCards(hand.board),
-      revealedPlayerIds: result.winners.some((winner) => winner.reason === "showdown")
-        ? this.seats
+      showdownPlayerIds,
+      revealedPlayerIds: Array.from(
+        new Set([
+          ...showdownPlayerIds,
+          ...this.seats
             .filter((seat): seat is SeatState => Boolean(seat))
-            .filter((seat) => seat.inHand && !seat.folded)
+            .filter((seat) => seat.revealOnHandComplete)
             .map((seat) => seat.playerId)
-        : [],
+        ])
+      ),
       result: {
         board: cloneCards(result.board),
         pots: result.pots.map((pot) => ({
@@ -933,6 +955,7 @@ export class HoldemTable {
         playerId: seat.playerId,
         playerName: seat.playerName,
         stack: seat.stack,
+        revealOnHandComplete: seat.revealOnHandComplete,
         sitOut: seat.sitOut,
         inHand: seat.inHand,
         folded: seat.folded,
@@ -942,6 +965,20 @@ export class HoldemTable {
         holeCards: showPrivate ? cloneCards(seat.holeCards) : []
       };
     });
+  }
+
+  private syncLastCompletedHandReveals(): void {
+    if (this.hand !== null || !this.lastCompletedHand) {
+      return;
+    }
+    const revealedPlayerIds = new Set(this.lastCompletedHand.showdownPlayerIds);
+    for (const seat of this.seats) {
+      if (!seat || !seat.revealOnHandComplete) {
+        continue;
+      }
+      revealedPlayerIds.add(seat.playerId);
+    }
+    this.lastCompletedHand.revealedPlayerIds = Array.from(revealedPlayerIds);
   }
 
   private nextDealerSeat(eligible: number[]): number {

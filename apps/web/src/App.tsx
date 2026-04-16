@@ -13,6 +13,7 @@ interface Seat {
   playerId: string;
   playerName: string;
   stack: number;
+  revealOnHandComplete: boolean;
   sitOut: boolean;
   inHand: boolean;
   folded: boolean;
@@ -343,6 +344,7 @@ export function App(): JSX.Element {
   const [turnDeadlineMs, setTurnDeadlineMs] = useState<number | null>(null);
   const [remainingMs, setRemainingMs] = useState(0);
   const [hideOwnCards, setHideOwnCards] = useState(false);
+  const [revealOnHandCompleteBusy, setRevealOnHandCompleteBusy] = useState(false);
   const [dealBursts, setDealBursts] = useState<DealBurst[]>([]);
   const [betBursts, setBetBursts] = useState<BetBurst[]>([]);
   const [boardDealSlots, setBoardDealSlots] = useState<number[]>([]);
@@ -975,6 +977,25 @@ export function App(): JSX.Element {
     setTableState(data.table);
   };
 
+  const setRevealOnHandComplete = async (revealOnHandComplete: boolean): Promise<void> => {
+    if (!selectedTableId) {
+      return;
+    }
+    setRevealOnHandCompleteBusy(true);
+    const response = await fetch(`${API_URL}/api/tables/${selectedTableId}/seats/reveal-on-hand-complete`, {
+      method: "POST",
+      headers: authHeaders,
+      body: JSON.stringify({ revealOnHandComplete })
+    });
+    const data = await response.json();
+    setRevealOnHandCompleteBusy(false);
+    if (data.error) {
+      setErrorText(data.error);
+      return;
+    }
+    setTableState(data.table);
+  };
+
   const startHand = async (): Promise<void> => {
     if (!selectedTableId || !tableState) {
       return;
@@ -1054,6 +1075,7 @@ export function App(): JSX.Element {
   const isHostPlayer = Boolean(player && hostPlayerId && player.id === hostPlayerId);
   const hasHandStarted = (tableState?.handCount ?? 0) > 0;
   const myHoleCards = mySeat?.holeCards ?? [];
+  const shouldRevealOnHandComplete = mySeat?.revealOnHandComplete ?? false;
   const countdownSec = Math.max(0, Math.ceil(remainingMs / 1000));
   const tableStatusClass = tableState?.status === "active" ? "active" : "waiting";
   const ringSeatCount = tableState?.maxSeats ?? 0;
@@ -1666,9 +1688,20 @@ export function App(): JSX.Element {
                                 </span>
                               ))}
                           </div>
-                          <button className="btn btn-ghost anti-peek-btn" onClick={() => setHideOwnCards((prev) => !prev)}>
-                            {hideOwnCards ? "显示手牌" : "防窥屏"}
-                          </button>
+                          <div className="hand-toggle-group">
+                            <button className="btn btn-ghost anti-peek-btn" onClick={() => setHideOwnCards((prev) => !prev)}>
+                              {hideOwnCards ? "显示手牌" : "防窥屏"}
+                            </button>
+                            <button
+                              className={`btn btn-ghost reveal-toggle-btn${shouldRevealOnHandComplete ? " is-active" : ""}`}
+                              onClick={() => void setRevealOnHandComplete(!shouldRevealOnHandComplete)}
+                              disabled={revealOnHandCompleteBusy}
+                              aria-pressed={shouldRevealOnHandComplete}
+                              title="选中后，这把结束时所有人都能看到你的手牌"
+                            >
+                              {shouldRevealOnHandComplete ? "亮牌: 开" : "亮牌: 关"}
+                            </button>
+                          </div>
                         </div>
                       ) : null}
 

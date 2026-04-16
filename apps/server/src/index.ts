@@ -118,6 +118,10 @@ const switchSeatSchema = z.object({
   seatIndex: z.number().int().min(0).max(9)
 });
 
+const revealOnHandCompleteSchema = z.object({
+  revealOnHandComplete: z.boolean()
+});
+
 const actionSchema = z.object({
   type: z.enum(["fold", "check", "call", "bet", "raise", "all-in"]),
   amount: z.number().int().min(1).optional(),
@@ -690,6 +694,19 @@ app.post("/api/tables/:tableId/seats/switch", (req, res) => {
       throw new Error("seatIndex out of table range");
     }
     table.switchSeat(session.playerId, body.seatIndex);
+    res.json({ table: table.getPublicState(session.playerId) });
+    broadcastTableState(table.id);
+  } catch (error) {
+    res.status(400).json({ error: asErrorMessage(error) });
+  }
+});
+
+app.post("/api/tables/:tableId/seats/reveal-on-hand-complete", (req, res) => {
+  try {
+    const session = req.session as Session;
+    const body = revealOnHandCompleteSchema.parse(req.body ?? {});
+    const table = ensureTable(req.params.tableId);
+    table.setRevealOnHandComplete(session.playerId, body.revealOnHandComplete);
     res.json({ table: table.getPublicState(session.playerId) });
     broadcastTableState(table.id);
   } catch (error) {

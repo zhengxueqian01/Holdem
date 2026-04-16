@@ -1,14 +1,25 @@
-# bug
-我复制了.env.sample为.env后，需要修改localhost为本机ip，然后发现无法读取
+# Todo list
+[]表示待办，√表示完成
 
-1.apps/server/src/index.ts的41行，这里读不到env里的
-  CORS_ORIGIN: z.string().default("http://localhost:5173"),
-  需要把localhost改成部署地址的ip，下同
-
-2.apps/web/src/App.tsx的第107行，这里读不到env里的VITE_API_URL
-  const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+## bug
+[]1.返回大厅button失效
+[]2.公共牌会被挡住
+[]3.当前行动的字体颜色不对
+[]4.D，sb，行动中ui再改改
+[]5.貌似all in的逻辑还有问题，在筹码数量不同的时候，会有点问题
+[]6.输入框输入时，删不掉前面的0
+[]7.确认下一局不要弹窗
+[]8.下注和手牌之间还有很多空隙
 
 # 改进
 
-1.落座后，自己的视角在中间，每个人的顺序不变，但是不同的人的视图会有变化
-2.
+[]1.用户登陆
+[]2.给房主增加一个小标志
+[]3.增加所有牌型，然后可以提示用户自己当前是什么牌型
+[]4.给胜者加一个动画
+[√]5.show牌功能，局中或局后可以亮牌
+
+# mod
+
+[]1.all in后可以多发几次牌
+
