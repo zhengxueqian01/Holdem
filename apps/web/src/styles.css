@@ -694,10 +694,15 @@ label {
   top: 1.4%;
 }
 
+.table-hud-countdown {
+  display: flex;
+  justify-content: center;
+}
+
 .table-center {
   position: absolute;
   left: 50%;
-  top: 53%;
+  top: 39%;
   transform: translate(-50%, -50%);
   z-index: 3;
   width: min(1280px, 88%);
@@ -711,6 +716,7 @@ label {
 
 .page-table-mode .table-center {
   width: min(1500px, 92%);
+  top: 36%;
 }
 
 .table-dock {
@@ -764,12 +770,18 @@ label {
 }
 
 .stack-display {
-  font-size: 28px;
+  font-size: 24px;
   line-height: 1;
   font-weight: 900;
   color: #e0f2fe;
   letter-spacing: 0.02em;
   text-shadow: 0 2px 8px rgba(2, 6, 23, 0.5);
+}
+
+.player-status-row {
+  justify-content: center;
+  align-items: center;
+  min-height: 58px;
 }
 
 .table-dock-row .btn {
@@ -888,28 +900,48 @@ label {
 .my-hand-row {
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.my-hand-meta {
+  display: grid;
+  gap: 4px;
+  min-width: 168px;
 }
 
 .my-cards-strip {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 12px;
+  flex: 1 1 auto;
 }
 
 .my-card {
-  min-width: 70px;
+  min-width: 78px;
   text-align: center;
-  padding: 12px 12px;
+  padding: 16px 14px;
   border-radius: 11px;
   border: 1px solid rgba(255, 255, 255, 0.75);
   background: linear-gradient(145deg, #ffffff, #e2e8f0);
   color: #0f172a;
   font-weight: 800;
-  font-size: 20px;
+  font-size: 24px;
   line-height: 1;
   text-shadow: none;
   box-shadow: 0 6px 10px rgba(2, 6, 23, 0.35);
+}
+
+.my-card.suit-h,
+.my-card.suit-d {
+  color: #dc2626;
+}
+
+.my-card.suit-s,
+.my-card.suit-c {
+  color: #111827;
 }
 
 .my-card.hidden {
@@ -975,48 +1007,27 @@ label {
   white-space: nowrap;
 }
 
-.center-turn-panel {
-  width: 100%;
-  border-radius: 12px;
-  border: 1px solid rgba(226, 232, 240, 0.28);
-  background: rgba(2, 6, 23, 0.48);
-  padding: 6px 9px;
-  display: grid;
-  gap: 3px;
-}
-
-.center-turn-top {
+.hand-toggle-group {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 8px;
-  font-size: 14px;
-  font-weight: 700;
+  justify-content: flex-end;
+  min-width: 168px;
 }
 
-.center-turn-desc {
-  margin: 0;
-  text-align: center;
-  font-size: 11px;
-  color: #dbeafe;
-  line-height: 1.35;
+.reveal-toggle-btn {
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.center-turn-legal {
-  margin: 0;
-  font-size: 10px;
-  color: #d1fae5;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.reveal-toggle-btn.is-active {
+  border-color: rgba(45, 212, 191, 0.45);
+  background: rgba(13, 148, 136, 0.14);
+  color: #ccfbf1;
 }
 
 .table-board {
-  width: 100%;
+  width: min(calc(5 * 130px + 4 * 15px + 36px), 100%);
+  flex-wrap: nowrap;
   justify-content: center;
 }
 
@@ -1098,7 +1109,7 @@ label {
   position: relative;
   width: 100%;
   border-radius: 16px;
-  padding: 22px 8px 8px;
+  padding: 18px 8px 8px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(2, 6, 12, 0.22);
   backdrop-filter: blur(2px);
@@ -1116,7 +1127,7 @@ label {
   transform: rotate(var(--seat-body-rotate, 0deg));
   transform-origin: center center;
   display: grid;
-  gap: 6px;
+  gap: 4px;
   justify-items: center;
   position: relative;
 }
@@ -1147,36 +1158,50 @@ label {
   display: none;
 }
 
-.seat-stack-badge,
-.seat-bet-badge {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  font-weight: 800;
-  text-align: center;
-  box-shadow: 0 8px 18px rgba(2, 6, 23, 0.3);
+.seat-stack-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 4px;
 }
 
 .seat-stack-badge {
-  top: -14px;
-  min-width: 88px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
+  max-width: 100%;
   padding: 5px 10px;
   border-radius: 999px;
   font-size: 18px;
   line-height: 1;
+  font-weight: 800;
   color: #f8fafc;
+  text-align: center;
   text-shadow: 0 1px 0 rgba(15, 23, 42, 0.4);
+  box-shadow: 0 8px 18px rgba(2, 6, 23, 0.3);
+}
+
+.seat-bet-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 0;
 }
 
 .seat-bet-badge {
-  top: 12px;
-  z-index: 3;
-  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 68px;
+  padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
+  font-weight: 800;
+  line-height: 1.1;
   color: #111827;
   background: linear-gradient(135deg, #fef08a, #f59e0b);
+  box-shadow: 0 8px 18px rgba(2, 6, 23, 0.24);
 }
 
 .ring-seat-avatar-wrap {
@@ -1203,7 +1228,7 @@ label {
   width: min(100%, 122px);
   display: grid;
   gap: 3px;
-  margin-top: 4px;
+  margin-top: 2px;
   padding: 8px 10px;
   border-radius: 8px;
   background: rgba(15, 23, 42, 0.78);
@@ -1271,13 +1296,16 @@ label {
 }
 
 .ring-seat-meta {
-  min-height: 20px;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 4px 6px;
   font-size: 9px;
   color: #cbd5e1;
+}
+
+.ring-seat-meta:empty {
+  display: none;
 }
 
 .ring-seat-meta span {
@@ -1686,6 +1714,7 @@ label {
   .table-center {
     width: min(520px, 86%);
     gap: 6px;
+    top: 35%;
   }
 
   .board-label {
@@ -1702,6 +1731,11 @@ label {
     min-width: 56px;
     padding: 10px 8px;
     font-size: 22px;
+  }
+
+  .table-board {
+    width: min(calc(5 * 74px + 4 * 7px + 14px), 100%);
+    flex-wrap: nowrap;
   }
 
   .pot-chip-stack {
@@ -1741,13 +1775,19 @@ label {
   }
 
   .my-card {
-    min-width: 56px;
-    padding: 10px 8px;
-    font-size: 16px;
+    min-width: 62px;
+    padding: 12px 10px;
+    font-size: 18px;
+  }
+
+  .my-hand-meta,
+  .hand-toggle-group {
+    min-width: 100%;
+    justify-content: flex-start;
   }
 
   .stack-display {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   .center-pill {
@@ -1755,22 +1795,9 @@ label {
     padding: 2px 6px;
   }
 
-  .center-turn-panel {
-    padding: 6px 8px;
-  }
-
-  .center-turn-top {
-    font-size: 10px;
-  }
-
   .countdown {
     font-size: 26px;
     padding: 4px 10px;
-  }
-
-  .center-turn-desc,
-  .center-turn-legal {
-    font-size: 9px;
   }
 
   .chip-pick-btn {

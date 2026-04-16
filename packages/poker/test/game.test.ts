@@ -158,6 +158,62 @@ cases.push({
   }
 });
 
+cases.push({
+  name: "reveals opted-in player cards after uncontested hand",
+  run: () => {
+    const table = new HoldemTable({
+      name: "Opt In Reveal",
+      smallBlind: 5,
+      bigBlind: 10,
+      maxSeats: 2,
+      minBuyIn: 50,
+      maxBuyIn: 500,
+      actionTimeoutSec: 20
+    });
+    table.joinSeat(players[0], 0, 100);
+    table.joinSeat(players[1], 1, 100);
+    table.setRevealOnHandComplete(players[0].id, true);
+
+    table.startHand();
+    table.act(players[0].id, { type: "fold" });
+
+    const viewerState = table.getPublicState(players[1].id);
+    assert.deepEqual(viewerState.lastCompletedHand?.revealedPlayerIds, [players[0].id]);
+    assert.equal(viewerState.seats[0]?.holeCards.length, 2);
+    assert.equal(viewerState.seats[1]?.holeCards.length, 2);
+  }
+});
+
+cases.push({
+  name: "updates completed hand reveals when player opts in after hand ends",
+  run: () => {
+    const table = new HoldemTable({
+      name: "Late Opt In Reveal",
+      smallBlind: 5,
+      bigBlind: 10,
+      maxSeats: 2,
+      minBuyIn: 50,
+      maxBuyIn: 500,
+      actionTimeoutSec: 20
+    });
+    table.joinSeat(players[0], 0, 100);
+    table.joinSeat(players[1], 1, 100);
+
+    table.startHand();
+    table.act(players[0].id, { type: "fold" });
+
+    const before = table.getPublicState(players[1].id);
+    assert.deepEqual(before.lastCompletedHand?.revealedPlayerIds, []);
+    assert.equal(before.seats[0]?.holeCards.length, 0);
+
+    table.setRevealOnHandComplete(players[0].id, true);
+
+    const after = table.getPublicState(players[1].id);
+    assert.deepEqual(after.lastCompletedHand?.revealedPlayerIds, [players[0].id]);
+    assert.equal(after.seats[0]?.holeCards.length, 2);
+  }
+});
+
 let failed = 0;
 for (const testCase of cases) {
   try {

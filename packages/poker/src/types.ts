@@ -43,6 +43,7 @@ export interface SeatSnapshot {
   playerId: string;
   playerName: string;
   stack: number;
+  revealOnHandComplete: boolean;
   sitOut: boolean;
   inHand: boolean;
   folded: boolean;
@@ -101,6 +102,7 @@ export interface CompletedHandSummary {
   completedAt: string;
   board: Card[];
   result: HandResult;
+  showdownPlayerIds: string[];
   revealedPlayerIds: string[];
 }
 
