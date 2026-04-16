@@ -56,6 +56,37 @@ cases.push({
 });
 
 cases.push({
+  name: "keeps only viewer hole cards visible after uncontested hand",
+  run: () => {
+    const table = new HoldemTable({
+      name: "Visibility Uncontested",
+      smallBlind: 5,
+      bigBlind: 10,
+      maxSeats: 2,
+      minBuyIn: 50,
+      maxBuyIn: 500,
+      actionTimeoutSec: 20
+    });
+    table.joinSeat(players[0], 0, 100);
+    table.joinSeat(players[1], 1, 100);
+
+    table.startHand();
+    const myCardsBeforeFold = table.getPublicState(players[1].id).seats[1]?.holeCards ?? [];
+    assert.equal(myCardsBeforeFold.length, 2);
+
+    table.act(players[0].id, { type: "fold" });
+
+    const winnerView = table.getPublicState(players[1].id);
+    const foldedView = table.getPublicState(players[0].id);
+    assert.equal(winnerView.lastCompletedHand?.revealedPlayerIds.length, 0);
+    assert.equal(winnerView.seats[1]?.holeCards.length, 2);
+    assert.equal(winnerView.seats[0]?.holeCards.length, 0);
+    assert.equal(foldedView.seats[0]?.holeCards.length, 2);
+    assert.equal(foldedView.seats[1]?.holeCards.length, 0);
+  }
+});
+
+cases.push({
   name: "creates side pots and preserves total chips",
   run: () => {
     const table = new HoldemTable({
@@ -88,6 +119,45 @@ cases.push({
   }
 });
 
+cases.push({
+  name: "reveals showdown players until next hand starts",
+  run: () => {
+    const table = new HoldemTable({
+      name: "Visibility Showdown",
+      smallBlind: 5,
+      bigBlind: 10,
+      maxSeats: 3,
+      minBuyIn: 15,
+      maxBuyIn: 500,
+      actionTimeoutSec: 20
+    });
+    table.joinSeat(players[0], 0, 15);
+    table.joinSeat(players[1], 1, 15);
+    table.joinSeat(players[2], 2, 100);
+
+    table.startHand();
+    table.act(players[0].id, { type: "all-in" });
+    table.act(players[1].id, { type: "call" });
+    table.act(players[2].id, { type: "fold" });
+
+    const showdownView = table.getPublicState(players[2].id);
+    assert.deepEqual(
+      showdownView.lastCompletedHand?.revealedPlayerIds.slice().sort(),
+      [players[0].id, players[1].id].sort()
+    );
+    assert.equal(showdownView.seats[0]?.holeCards.length, 2);
+    assert.equal(showdownView.seats[1]?.holeCards.length, 2);
+
+    table.startHand();
+    const nextHandView = table.getPublicState(players[2].id);
+    assert.equal(nextHandView.status, "active");
+    assert.equal(nextHandView.lastCompletedHand?.revealedPlayerIds.length, 2);
+    assert.equal(nextHandView.seats[0]?.holeCards.length, 0);
+    assert.equal(nextHandView.seats[1]?.holeCards.length, 0);
+    assert.equal(nextHandView.seats[2]?.holeCards.length, 2);
+  }
+});
+
 let failed = 0;
 for (const testCase of cases) {
   try {
@@ -105,4 +175,3 @@ if (failed > 0) {
 }
 
 console.log(`All tests passed: ${cases.length}`);
-
