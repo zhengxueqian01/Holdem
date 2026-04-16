@@ -782,6 +782,12 @@ export class HoldemTable {
       handId: hand.handId,
       completedAt,
       board: cloneCards(hand.board),
+      revealedPlayerIds: result.winners.some((winner) => winner.reason === "showdown")
+        ? this.seats
+            .filter((seat): seat is SeatState => Boolean(seat))
+            .filter((seat) => seat.inHand && !seat.folded)
+            .map((seat) => seat.playerId)
+        : [],
       result: {
         board: cloneCards(result.board),
         pots: result.pots.map((pot) => ({
@@ -802,7 +808,6 @@ export class HoldemTable {
       seat.betThisStreet = 0;
       seat.committed = 0;
       seat.actedThisStreet = false;
-      seat.holeCards = [];
     }
 
     this.hand = null;
@@ -916,12 +921,13 @@ export class HoldemTable {
   }
 
   private publicSeats(viewerId: string | null, hidePrivateCards: boolean): Array<SeatSnapshot | null> {
-    const revealAll = this.hand === null;
+    const revealedPlayerIds = new Set(this.lastCompletedHand?.revealedPlayerIds ?? []);
     return this.seats.map((seat) => {
       if (!seat) {
         return null;
       }
-      const showPrivate = !hidePrivateCards || revealAll || viewerId === seat.playerId;
+      const showPrivate =
+        !hidePrivateCards || viewerId === seat.playerId || (this.hand === null && revealedPlayerIds.has(seat.playerId));
       return {
         seatIndex: seat.seatIndex,
         playerId: seat.playerId,

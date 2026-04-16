@@ -60,6 +60,7 @@ interface TableState {
     handId: string;
     completedAt: string;
     board: Array<{ rank: number; suit: string }>;
+    revealedPlayerIds: string[];
     result: {
       winners: Array<{
         playerId: string;

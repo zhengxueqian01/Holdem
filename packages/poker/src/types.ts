@@ -101,6 +101,7 @@ export interface CompletedHandSummary {
   completedAt: string;
   board: Card[];
   result: HandResult;
+  revealedPlayerIds: string[];
 }
 
 export interface PublicTableState {
