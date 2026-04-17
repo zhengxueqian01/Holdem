@@ -185,6 +185,38 @@ cases.push({
 });
 
 cases.push({
+  name: "preflop big blind can raise after callers",
+  run: () => {
+    const table = new HoldemTable({
+      name: "Big Blind Raise",
+      smallBlind: 5,
+      bigBlind: 10,
+      maxSeats: 6,
+      minBuyIn: 50,
+      maxBuyIn: 500,
+      actionTimeoutSec: 20
+    });
+    table.joinSeat(players[0], 0, 100);
+    table.joinSeat(players[1], 1, 100);
+    table.joinSeat(players[2], 2, 100);
+
+    table.startHand();
+    table.act(players[0].id, { type: "call" });
+    table.act(players[1].id, { type: "call" });
+
+    const legal = table.getLegalActions(players[2].id);
+    assert.deepEqual(
+      legal.map((action) => action.type),
+      ["fold", "check", "raise", "all-in"]
+    );
+
+    const raiseAction = legal.find((action) => action.type === "raise");
+    assert.equal(raiseAction?.minAmount, 20);
+    assert.equal(raiseAction?.maxAmount, 100);
+  }
+});
+
+cases.push({
   name: "updates completed hand reveals when player opts in after hand ends",
   run: () => {
     const table = new HoldemTable({

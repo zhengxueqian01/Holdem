@@ -451,13 +451,25 @@ export class HoldemTable {
     if (toCall <= 0) {
       legal.push({ type: "check", toCall: 0 });
       if (seat.stack > 0) {
-        const minBet = Math.min(maxStreetTarget, this.bigBlind);
-        legal.push({
-          type: "bet",
-          minAmount: minBet,
-          maxAmount: maxStreetTarget,
-          toCall: 0
-        });
+        if (hand.currentBet === 0) {
+          const minBet = Math.min(maxStreetTarget, this.bigBlind);
+          legal.push({
+            type: "bet",
+            minAmount: minBet,
+            maxAmount: maxStreetTarget,
+            toCall: 0
+          });
+        } else if (maxStreetTarget > hand.currentBet) {
+          const minRaiseTarget = hand.currentBet + hand.minRaise;
+          if (maxStreetTarget >= minRaiseTarget) {
+            legal.push({
+              type: "raise",
+              minAmount: minRaiseTarget,
+              maxAmount: maxStreetTarget,
+              toCall: 0
+            });
+          }
+        }
         legal.push({
           type: "all-in",
           minAmount: maxStreetTarget,
