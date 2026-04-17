@@ -545,6 +545,7 @@ export function App(): JSX.Element {
     wsRef.current = socket;
     socket.onopen = () => {
       setStatusText("WS 已连接");
+      socket.send(JSON.stringify({ type: "subscribe_lobby" }));
       if (selectedTableId) {
         socket.send(JSON.stringify({ type: "subscribe_table", tableId: selectedTableId }));
       }
@@ -558,6 +559,10 @@ export function App(): JSX.Element {
     socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data as string);
+        if (data.type === "lobby_summary" && Array.isArray(data.tables)) {
+          setTables(data.tables as TableSummary[]);
+          return;
+        }
         if (data.type === "table_state" && data.state && (!selectedTableId || data.tableId === selectedTableId)) {
           setTableState(data.state as TableState);
           setErrorText("");
