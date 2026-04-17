@@ -1045,12 +1045,6 @@ export function App(): JSX.Element {
       setErrorText("仅房主可以开始新一手");
       return;
     }
-    if (tableState.status === "waiting" && tableState.lastCompletedHand) {
-      const confirmed = window.confirm("上一手已结束，确认开始下一手吗？");
-      if (!confirmed) {
-        return;
-      }
-    }
     const response = await fetch(`${API_URL}/api/tables/${selectedTableId}/start-hand`, {
       method: "POST",
       headers: authHeaders
@@ -1740,7 +1734,7 @@ export function App(): JSX.Element {
                             disabled={!isHostPlayer}
                             title={isHostPlayer ? "由房主开始新一手" : "仅房主可以开始新一手"}
                           >
-                            {tableState.lastCompletedHand ? "确认开始下一局" : "开始一手"}
+                            开始一手
                           </button>
                         </div>
                       ) : null}
