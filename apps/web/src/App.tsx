@@ -339,7 +339,7 @@ export function App(): JSX.Element {
   const [tables, setTables] = useState<TableSummary[]>([]);
   const [tableState, setTableState] = useState<TableState | null>(null);
   const [selectedTableId, setSelectedTableId] = useState<string>("");
-  const [actionAmount, setActionAmount] = useState(50);
+  const [actionAmountInput, setActionAmountInput] = useState("50");
   const [statusText, setStatusText] = useState("未连接");
   const [errorText, setErrorText] = useState("");
   const [loginBusy, setLoginBusy] = useState(false);
@@ -357,11 +357,11 @@ export function App(): JSX.Element {
   const [adminBusy, setAdminBusy] = useState(false);
   const [createForm, setCreateForm] = useState({
     name: "Beginner Table",
-    smallBlind: 5,
-    bigBlind: 10,
-    maxSeats: 6,
-    initialStack: 200,
-    actionTimeoutSec: 20
+    smallBlind: "5",
+    bigBlind: "10",
+    maxSeats: "6",
+    initialStack: "200",
+    actionTimeoutSec: "20"
   });
   const wsRef = useRef<WebSocket | null>(null);
   const lastTurnKeyRef = useRef("");
@@ -400,6 +400,36 @@ export function App(): JSX.Element {
     }),
     [token]
   );
+
+  const parseIntegerInput = (value: string): number | null => {
+    if (!/^\d+$/.test(value)) {
+      return null;
+    }
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const updateCreateNumberField = (
+    field: "maxSeats" | "smallBlind" | "bigBlind" | "initialStack" | "actionTimeoutSec",
+    value: string
+  ): void => {
+    if (value !== "" && !/^\d+$/.test(value)) {
+      return;
+    }
+    setCreateForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const normalizeCreateNumberField = (
+    field: "maxSeats" | "smallBlind" | "bigBlind" | "initialStack" | "actionTimeoutSec"
+  ): void => {
+    setCreateForm((prev) => {
+      const parsed = parseIntegerInput(prev[field]);
+      if (parsed === null) {
+        return prev;
+      }
+      return { ...prev, [field]: String(parsed) };
+    });
+  };
 
   const refreshTables = async (): Promise<void> => {
     if (!token) {
@@ -871,14 +901,23 @@ export function App(): JSX.Element {
 
   const createTable = async (): Promise<void> => {
     setErrorText("");
+    const maxSeats = parseIntegerInput(createForm.maxSeats);
+    const smallBlind = parseIntegerInput(createForm.smallBlind);
+    const bigBlind = parseIntegerInput(createForm.bigBlind);
+    const initialStack = parseIntegerInput(createForm.initialStack);
+    const actionTimeoutSec = parseIntegerInput(createForm.actionTimeoutSec);
+    if (maxSeats === null || smallBlind === null || bigBlind === null || initialStack === null || actionTimeoutSec === null) {
+      setErrorText("请填写有效的正整数配置");
+      return;
+    }
     const payload = {
       name: createForm.name,
-      smallBlind: createForm.smallBlind,
-      bigBlind: createForm.bigBlind,
-      maxSeats: createForm.maxSeats,
-      minBuyIn: createForm.initialStack,
-      maxBuyIn: createForm.initialStack,
-      actionTimeoutSec: createForm.actionTimeoutSec
+      smallBlind,
+      bigBlind,
+      maxSeats,
+      minBuyIn: initialStack,
+      maxBuyIn: initialStack,
+      actionTimeoutSec
     };
     const response = await fetch(`${API_URL}/api/tables`, {
       method: "POST",
@@ -1006,12 +1045,6 @@ export function App(): JSX.Element {
       setErrorText("仅房主可以开始新一手");
       return;
     }
-    if (tableState.status === "waiting" && tableState.lastCompletedHand) {
-      const confirmed = window.confirm("上一手已结束，确认开始下一手吗？");
-      if (!confirmed) {
-        return;
-      }
-    }
     const response = await fetch(`${API_URL}/api/tables/${selectedTableId}/start-hand`, {
       method: "POST",
       headers: authHeaders
@@ -1029,8 +1062,9 @@ export function App(): JSX.Element {
       return;
     }
     const isSizing = action.type === "bet" || action.type === "raise";
+    const parsedActionAmount = parseIntegerInput(actionAmountInput) ?? 0;
     const boundedAmount = isSizing
-      ? Math.max(action.minAmount ?? 0, Math.min(Math.floor(actionAmount || 0), action.maxAmount ?? Number.MAX_SAFE_INTEGER))
+      ? Math.max(action.minAmount ?? 0, Math.min(parsedActionAmount, action.maxAmount ?? Number.MAX_SAFE_INTEGER))
       : undefined;
     const payload = {
       type: action.type,
@@ -1091,7 +1125,8 @@ export function App(): JSX.Element {
     0,
     Math.min(betSizingAction?.maxAmount ?? mySeat?.stack ?? 0, mySeat?.stack ?? 0)
   );
-  const normalizedActionAmount = Math.max(0, Math.min(Math.floor(actionAmount || 0), actionAmountMax));
+  const parsedActionAmount = parseIntegerInput(actionAmountInput) ?? 0;
+  const normalizedActionAmount = Math.max(0, Math.min(parsedActionAmount, actionAmountMax));
   const sizingActionAmount = hasSizingActions ? Math.max(actionAmountMin, normalizedActionAmount) : 0;
   const halfPotTarget = Math.max(
     actionAmountMin,
@@ -1128,8 +1163,15 @@ export function App(): JSX.Element {
   };
 
   const clampActionAmount = (nextAmount: number): void => {
-    const bounded = Math.max(0, Math.min(Math.floor(nextAmount || 0), actionAmountMax));
-    setActionAmount(bounded);
+    const bounded = Math.max(0, Math.min(Math.floor(nextAmount), actionAmountMax));
+    setActionAmountInput(String(bounded));
+  };
+
+  const handleActionAmountInputChange = (value: string): void => {
+    if (value !== "" && !/^\d+$/.test(value)) {
+      return;
+    }
+    setActionAmountInput(value);
   };
 
   const leaveTableView = (): void => {
@@ -1209,55 +1251,55 @@ export function App(): JSX.Element {
                   座位数
                   <input
                     className="text-input"
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     value={createForm.maxSeats}
-                    onChange={(event) =>
-                      setCreateForm((prev) => ({ ...prev, maxSeats: Number(event.target.value) }))
-                    }
+                    onChange={(event) => updateCreateNumberField("maxSeats", event.target.value)}
+                    onBlur={() => normalizeCreateNumberField("maxSeats")}
                   />
                 </label>
                 <label>
                   小盲
                   <input
                     className="text-input"
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     value={createForm.smallBlind}
-                    onChange={(event) =>
-                      setCreateForm((prev) => ({ ...prev, smallBlind: Number(event.target.value) }))
-                    }
+                    onChange={(event) => updateCreateNumberField("smallBlind", event.target.value)}
+                    onBlur={() => normalizeCreateNumberField("smallBlind")}
                   />
                 </label>
                 <label>
                   大盲
                   <input
                     className="text-input"
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     value={createForm.bigBlind}
-                    onChange={(event) =>
-                      setCreateForm((prev) => ({ ...prev, bigBlind: Number(event.target.value) }))
-                    }
+                    onChange={(event) => updateCreateNumberField("bigBlind", event.target.value)}
+                    onBlur={() => normalizeCreateNumberField("bigBlind")}
                   />
                 </label>
                 <label>
                   初始筹码
                   <input
                     className="text-input"
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     value={createForm.initialStack}
-                    onChange={(event) =>
-                      setCreateForm((prev) => ({ ...prev, initialStack: Number(event.target.value) }))
-                    }
+                    onChange={(event) => updateCreateNumberField("initialStack", event.target.value)}
+                    onBlur={() => normalizeCreateNumberField("initialStack")}
                   />
                 </label>
                 <label className="full-row">
                   行动秒数
                   <input
                     className="text-input"
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     value={createForm.actionTimeoutSec}
-                    onChange={(event) =>
-                      setCreateForm((prev) => ({ ...prev, actionTimeoutSec: Number(event.target.value) }))
-                    }
+                    onChange={(event) => updateCreateNumberField("actionTimeoutSec", event.target.value)}
+                    onBlur={() => normalizeCreateNumberField("actionTimeoutSec")}
                   />
                 </label>
               </div>
@@ -1510,25 +1552,29 @@ export function App(): JSX.Element {
                                           />
                                         ))}
                                       </div>
-                                      <div className="ring-seat-head-badges">
-                                        {isDealer ? <span className="seat-role-badge dealer">D</span> : null}
-                                        {isSmallBlind ? <span className="seat-role-badge small-blind">SB</span> : null}
-                                        {isBigBlind ? <span className="seat-role-badge big-blind">BB</span> : null}
-                                        {isActor ? <span className="actor-badge">行动中</span> : null}
-                                      </div>
+                                    </div>
+                                    <div className="seat-status-row">
+                                      <span className={`seat-role-badge seat-role-slot dealer ${isDealer ? "" : "placeholder"}`}>{isDealer ? "D" : "D"}</span>
+                                      <span
+                                        className={`seat-role-badge seat-role-slot blind-slot ${
+                                          isSmallBlind ? "small-blind" : isBigBlind ? "big-blind" : "placeholder"
+                                        }`}
+                                      >
+                                        {isSmallBlind ? "SB" : isBigBlind ? "BB" : "BB"}
+                                      </span>
                                     </div>
                                     <div className="ring-seat-head">
                                       <strong>{seat.playerName}</strong>
                                       <span className="seat-index-label">#{seat.seatIndex}</span>
                                     </div>
-                                    {seat.betThisStreet > 0 ? (
-                                      <div className="seat-bet-row">
-                                        <span className="seat-bet-badge">下注 {seat.betThisStreet.toLocaleString()}</span>
-                                      </div>
-                                    ) : null}
+                                    <div className="seat-bet-row">
+                                      <span className={`seat-bet-badge ${seat.betThisStreet > 0 ? "" : "placeholder"}`}>
+                                        下注 {seat.betThisStreet > 0 ? seat.betThisStreet.toLocaleString() : "0"}
+                                      </span>
+                                    </div>
                                     <div className="ring-seat-meta">
-                                      {seat.folded ? <span className="badge muted-badge">folded</span> : null}
-                                      {seat.allIn ? <span className="badge warn-badge">all-in</span> : null}
+                                      <span className={`badge muted-badge ${seat.folded ? "" : "placeholder"}`}>folded</span>
+                                      <span className={`badge warn-badge ${seat.allIn ? "" : "placeholder"}`}>all-in</span>
                                     </div>
                                     <div className="ring-cards">
                                       {seat.holeCards.length ? seat.holeCards.map(cardLabel).join(" ") : "?? ??"}
@@ -1692,7 +1738,7 @@ export function App(): JSX.Element {
                             disabled={!isHostPlayer}
                             title={isHostPlayer ? "由房主开始新一手" : "仅房主可以开始新一手"}
                           >
-                            {tableState.lastCompletedHand ? "确认开始下一局" : "开始一手"}
+                            开始一手
                           </button>
                         </div>
                       ) : null}
@@ -1715,11 +1761,11 @@ export function App(): JSX.Element {
                                 金额
                                 <input
                                   className="text-input"
-                                  type="number"
-                                  min={actionAmountMin}
-                                  max={actionAmountMax}
-                                  value={normalizedActionAmount}
-                                  onChange={(event) => clampActionAmount(Number(event.target.value))}
+                                  type="text"
+                                  inputMode="numeric"
+                                  value={actionAmountInput}
+                                  onChange={(event) => handleActionAmountInputChange(event.target.value)}
+                                  onBlur={() => clampActionAmount(parsedActionAmount)}
                                 />
                               </label>
                               <div className="amount-slider-wrap">
@@ -1794,7 +1840,7 @@ export function App(): JSX.Element {
                                       minAmount: actionAmountMin,
                                       maxAmount: actionAmountMax
                                     };
-                                    setActionAmount(sizingActionAmount);
+                                    setActionAmountInput(String(sizingActionAmount));
                                     void sendAction(actionWithBound);
                                   }}
                                 >

@@ -1127,12 +1127,17 @@ label {
   transform: rotate(var(--seat-body-rotate, 0deg));
   transform-origin: center center;
   display: grid;
-  gap: 4px;
+  gap: 2px;
   justify-items: center;
   position: relative;
 }
 
+.ring-seat.occupied .ring-seat-body {
+  align-content: start;
+}
+
 .ring-seat.occupied .ring-seat-shell {
+  padding-bottom: 16px;
   border-color: rgba(134, 239, 172, 0.24);
 }
 
@@ -1162,6 +1167,7 @@ label {
   display: flex;
   justify-content: center;
   width: 100%;
+  min-height: 34px;
   margin-bottom: 4px;
 }
 
@@ -1186,6 +1192,7 @@ label {
   display: flex;
   justify-content: center;
   width: 100%;
+  min-height: 20px;
   margin-top: 0;
 }
 
@@ -1210,6 +1217,7 @@ label {
   height: 82px;
   display: grid;
   place-items: center;
+  margin-bottom: 4px;
 }
 
 .ring-seat-avatar {
@@ -1228,6 +1236,8 @@ label {
   width: min(100%, 122px);
   display: grid;
   gap: 3px;
+  min-height: 54px;
+  align-content: center;
   margin-top: 2px;
   padding: 8px 10px;
   border-radius: 8px;
@@ -1235,15 +1245,31 @@ label {
   text-align: center;
 }
 
-.ring-seat-head-badges {
-  position: absolute;
-  left: 50%;
-  bottom: -8px;
-  transform: translateX(-50%);
+.seat-status-row {
   display: flex;
   align-items: center;
-  gap: 4px;
-  z-index: 2;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 122px;
+  height: 24px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.seat-role-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+}
+
+.seat-role-slot.placeholder {
+  visibility: hidden;
+}
+
+.seat-bet-badge.placeholder,
+.ring-seat-meta .placeholder {
+  visibility: hidden;
 }
 
 .ring-seat-head strong {
@@ -1264,12 +1290,19 @@ label {
 
 .seat-role-badge {
   border-radius: 999px;
-  padding: 1px 6px;
-  font-size: 9px;
+  min-width: 24px;
+  padding: 2px 7px;
+  font-size: 10px;
+  line-height: 1;
   font-weight: 800;
   color: #111827;
   background: #e5e7eb;
   border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 6px 12px rgba(15, 23, 42, 0.18);
+}
+
+.seat-role-badge.blind-slot {
+  min-width: 34px;
 }
 
 .seat-role-badge.dealer {
@@ -1285,27 +1318,16 @@ label {
   color: #f8fafc;
 }
 
-.actor-badge {
-  border-radius: 999px;
-  padding: 1px 6px;
-  font-size: 9px;
-  font-weight: 800;
-  color: #111827;
-  background: linear-gradient(135deg, #fde68a, #f59e0b);
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.55);
-}
-
 .ring-seat-meta {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 4px 6px;
+  height: 0;
+  min-height: 0;
+  overflow: visible;
   font-size: 9px;
   color: #cbd5e1;
-}
-
-.ring-seat-meta:empty {
-  display: none;
 }
 
 .ring-seat-meta span {
@@ -1316,6 +1338,8 @@ label {
 }
 
 .ring-cards {
+  min-height: 14px;
+  margin-top: -2px;
   font-size: 11px;
   font-weight: 700;
   color: #a7f3d0;
@@ -1680,8 +1704,9 @@ label {
     padding: 6px 8px;
   }
 
-  .ring-seat-head-badges {
-    gap: 3px;
+  .seat-status-row {
+    max-width: 108px;
+    height: 22px;
   }
 
   .ring-seat-avatar-wrap,
@@ -1703,8 +1728,17 @@ label {
   }
 
   .seat-role-badge {
-    padding: 1px 6px;
+    min-width: 22px;
+    padding: 2px 6px;
     font-size: 9px;
+  }
+
+  .seat-role-slot {
+    height: 22px;
+  }
+
+  .seat-role-badge.blind-slot {
+    min-width: 30px;
   }
 
   .ring-seat-meta {
