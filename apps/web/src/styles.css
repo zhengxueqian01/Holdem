@@ -1361,6 +1361,11 @@ label {
   background: linear-gradient(145deg, #fde68a, #f59e0b);
 }
 
+.seat-role-badge.host {
+  min-width: 34px;
+  background: linear-gradient(145deg, #86efac, #22c55e);
+}
+
 .seat-role-badge.small-blind {
   background: linear-gradient(145deg, #bfdbfe, #60a5fa);
 }

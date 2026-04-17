@@ -1495,6 +1495,7 @@ export function App(): JSX.Element {
                         const isDealer = dealerSeatIndex === index;
                         const isSmallBlind = smallBlindSeatIndex === index;
                         const isBigBlind = bigBlindSeatIndex === index;
+                        const isHostSeat = Boolean(hostPlayerId && seat?.playerId === hostPlayerId);
                         const facing = seatFacingAt(index, ringSeatCount);
                         const shellRotate = seatShellRotateDeg(facing);
                         const bodyRotate = seatBodyRotateDeg(facing);
@@ -1558,6 +1559,7 @@ export function App(): JSX.Element {
                                       </div>
                                     </div>
                                     <div className="seat-status-row">
+                                      <span className={`seat-role-badge seat-role-slot host ${isHostSeat ? "" : "placeholder"}`}>{isHostSeat ? "房主" : "房主"}</span>
                                       <span className={`seat-role-badge seat-role-slot dealer ${isDealer ? "" : "placeholder"}`}>{isDealer ? "D" : "D"}</span>
                                       <span
                                         className={`seat-role-badge seat-role-slot blind-slot ${
