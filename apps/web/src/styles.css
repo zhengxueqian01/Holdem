@@ -1380,9 +1380,9 @@ label {
   flex-wrap: wrap;
   justify-content: center;
   gap: 4px 6px;
-  height: 0;
-  min-height: 0;
-  overflow: visible;
+  min-height: 22px;
+  margin-top: 2px;
+  overflow: hidden;
   font-size: 9px;
   color: #cbd5e1;
 }
@@ -1396,7 +1396,7 @@ label {
 
 .ring-cards {
   min-height: 14px;
-  margin-top: -2px;
+  margin-top: 2px;
   font-size: 11px;
   font-weight: 700;
   color: #a7f3d0;

@@ -1579,11 +1579,16 @@ export function App(): JSX.Element {
                                       </span>
                                     </div>
                                     <div className="ring-seat-meta">
-                                      <span className={`badge muted-badge ${seat.folded ? "" : "placeholder"}`}>folded</span>
-                                      <span className={`badge warn-badge ${seat.allIn ? "" : "placeholder"}`}>all-in</span>
+                                      <span
+                                        className={`badge ${
+                                          seat.allIn ? "warn-badge" : "muted-badge"
+                                        } ${seat.folded || seat.allIn ? "" : "placeholder"}`}
+                                      >
+                                        {seat.allIn ? "all-in" : "folded"}
+                                      </span>
                                     </div>
                                     <div className="ring-cards">
-                                      {seat.holeCards.length ? seat.holeCards.map(cardLabel).join(" ") : "?? ??"}
+                                      {isMine && hideOwnCards ? "?? ??" : seat.holeCards.length ? seat.holeCards.map(cardLabel).join(" ") : "?? ??"}
                                     </div>
                                   </>
                                 ) : (
