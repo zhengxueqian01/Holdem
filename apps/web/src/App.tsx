@@ -1151,6 +1151,9 @@ export function App(): JSX.Element {
   const lastWinnerText = lastCompletedWinners
     .map((winner) => `${winnerNameById.get(winner.playerId) ?? `玩家${winner.playerId.slice(0, 6)}`} +${winner.amount}`)
     .join(" · ");
+  const highlightedWinnerPlayerIds = new Set(
+    showingCompletedBoard ? lastCompletedWinners.map((winner) => winner.playerId) : []
+  );
   const nonSizingActionText = (action: LegalAction): string => {
     if (action.type === "call") {
       return `${actionLabelMap[action.type]} ${action.toCall ?? 0}`;
@@ -1492,18 +1495,20 @@ export function App(): JSX.Element {
                         const isDealer = dealerSeatIndex === index;
                         const isSmallBlind = smallBlindSeatIndex === index;
                         const isBigBlind = bigBlindSeatIndex === index;
+                        const isHostSeat = Boolean(hostPlayerId && seat?.playerId === hostPlayerId);
                         const facing = seatFacingAt(index, ringSeatCount);
                         const shellRotate = seatShellRotateDeg(facing);
                         const bodyRotate = seatBodyRotateDeg(facing);
                         const seatChips = buildChipStack(seat?.stack ?? 0);
                         const seatPos = seatRingStyle(index, ringSeatCount);
+                        const isWinner = Boolean(seat && highlightedWinnerPlayerIds.has(seat.playerId));
                         const canClickToJoin = !seat && mySeatIndex === -1;
                         const canClickToSwitch = !seat && mySeatIndex !== -1 && mySeatIndex !== index && !hasActiveHand;
                         const canClickEmpty = canClickToJoin || canClickToSwitch;
                         return (
                           <li
                             key={index}
-                            className={`ring-seat ${seat ? "occupied" : "empty"} ${isActor ? "actor" : ""} ${isMine ? "me" : ""} ${canClickEmpty ? "clickable-empty" : ""} facing-${facing}`}
+                            className={`ring-seat ${seat ? "occupied" : "empty"} ${isActor ? "actor" : ""} ${isMine ? "me" : ""} ${isWinner ? "winner" : ""} ${canClickEmpty ? "clickable-empty" : ""} facing-${facing}`}
                             style={seatPos}
                             onClick={
                               canClickToJoin
@@ -1554,6 +1559,7 @@ export function App(): JSX.Element {
                                       </div>
                                     </div>
                                     <div className="seat-status-row">
+                                      <span className={`seat-role-badge seat-role-slot host ${isHostSeat ? "" : "placeholder"}`}>{isHostSeat ? "房主" : "房主"}</span>
                                       <span className={`seat-role-badge seat-role-slot dealer ${isDealer ? "" : "placeholder"}`}>{isDealer ? "D" : "D"}</span>
                                       <span
                                         className={`seat-role-badge seat-role-slot blind-slot ${
