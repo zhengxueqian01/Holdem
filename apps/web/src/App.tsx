@@ -1552,25 +1552,29 @@ export function App(): JSX.Element {
                                           />
                                         ))}
                                       </div>
-                                      <div className="ring-seat-head-badges">
-                                        {isDealer ? <span className="seat-role-badge dealer">D</span> : null}
-                                        {isSmallBlind ? <span className="seat-role-badge small-blind">SB</span> : null}
-                                        {isBigBlind ? <span className="seat-role-badge big-blind">BB</span> : null}
-                                        {isActor ? <span className="actor-badge">行动中</span> : null}
-                                      </div>
+                                    </div>
+                                    <div className="seat-status-row">
+                                      <span className={`seat-role-badge seat-role-slot dealer ${isDealer ? "" : "placeholder"}`}>{isDealer ? "D" : "D"}</span>
+                                      <span
+                                        className={`seat-role-badge seat-role-slot blind-slot ${
+                                          isSmallBlind ? "small-blind" : isBigBlind ? "big-blind" : "placeholder"
+                                        }`}
+                                      >
+                                        {isSmallBlind ? "SB" : isBigBlind ? "BB" : "BB"}
+                                      </span>
                                     </div>
                                     <div className="ring-seat-head">
                                       <strong>{seat.playerName}</strong>
                                       <span className="seat-index-label">#{seat.seatIndex}</span>
                                     </div>
-                                    {seat.betThisStreet > 0 ? (
-                                      <div className="seat-bet-row">
-                                        <span className="seat-bet-badge">下注 {seat.betThisStreet.toLocaleString()}</span>
-                                      </div>
-                                    ) : null}
+                                    <div className="seat-bet-row">
+                                      <span className={`seat-bet-badge ${seat.betThisStreet > 0 ? "" : "placeholder"}`}>
+                                        下注 {seat.betThisStreet > 0 ? seat.betThisStreet.toLocaleString() : "0"}
+                                      </span>
+                                    </div>
                                     <div className="ring-seat-meta">
-                                      {seat.folded ? <span className="badge muted-badge">folded</span> : null}
-                                      {seat.allIn ? <span className="badge warn-badge">all-in</span> : null}
+                                      <span className={`badge muted-badge ${seat.folded ? "" : "placeholder"}`}>folded</span>
+                                      <span className={`badge warn-badge ${seat.allIn ? "" : "placeholder"}`}>all-in</span>
                                     </div>
                                     <div className="ring-cards">
                                       {seat.holeCards.length ? seat.holeCards.map(cardLabel).join(" ") : "?? ??"}
