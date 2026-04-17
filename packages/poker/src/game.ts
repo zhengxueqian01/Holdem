@@ -443,10 +443,11 @@ export class HoldemTable {
     }
 
     const toCall = hand.currentBet - seat.betThisStreet;
+    const actualToCall = Math.max(0, Math.min(toCall, seat.stack));
     const maxStreetTarget = seat.betThisStreet + seat.stack;
     const legal: LegalAction[] = [];
 
-    legal.push({ type: "fold", toCall });
+    legal.push({ type: "fold", toCall: actualToCall });
 
     if (toCall <= 0) {
       legal.push({ type: "check", toCall: 0 });
@@ -479,7 +480,10 @@ export class HoldemTable {
       }
     } else {
       if (seat.stack > 0) {
-        legal.push({ type: "call", toCall });
+        const callIsAllIn = actualToCall === seat.stack;
+        if (!callIsAllIn) {
+          legal.push({ type: "call", toCall: actualToCall });
+        }
         if (maxStreetTarget > hand.currentBet) {
           const minRaiseTarget = hand.currentBet + hand.minRaise;
           if (maxStreetTarget >= minRaiseTarget) {
@@ -487,16 +491,16 @@ export class HoldemTable {
               type: "raise",
               minAmount: minRaiseTarget,
               maxAmount: maxStreetTarget,
-              toCall
+              toCall: actualToCall
             });
           }
-          legal.push({
-            type: "all-in",
-            minAmount: maxStreetTarget,
-            maxAmount: maxStreetTarget,
-            toCall
-          });
         }
+        legal.push({
+          type: "all-in",
+          minAmount: maxStreetTarget,
+          maxAmount: maxStreetTarget,
+          toCall: actualToCall
+        });
       }
     }
 
@@ -720,7 +724,7 @@ export class HoldemTable {
     }
 
     const contenders = this.contenderSeats().map((seatIndex) => this.mustSeat(seatIndex));
-    const pots = this.calculatePots();
+    const { pots, refunds } = this.calculatePots();
     const payout = new Map<string, number>();
 
     for (const pot of pots) {
@@ -758,8 +762,9 @@ export class HoldemTable {
       if (!seat) {
         continue;
       }
+      const refund = refunds.get(seat.playerId) ?? 0;
       const amount = payout.get(seat.playerId) ?? 0;
-      seat.stack += amount;
+      seat.stack += refund + amount;
     }
 
     const winners: WinnerRecord[] = Array.from(payout.entries()).map(([playerId, amount]) => ({
@@ -848,26 +853,39 @@ export class HoldemTable {
     this.status = "waiting";
   }
 
-  private calculatePots(): PotSnapshot[] {
+  private calculatePots(): { pots: PotSnapshot[]; refunds: Map<string, number> } {
     const contributors = this.seats
       .filter((seat): seat is SeatState => seat !== null)
       .filter((seat) => seat.committed > 0)
       .map((seat) => ({ seatIndex: seat.seatIndex, playerId: seat.playerId, committed: seat.committed, folded: seat.folded }));
     if (contributors.length === 0) {
-      return [];
+      return { pots: [], refunds: new Map() };
     }
 
     const levels = Array.from(new Set(contributors.map((c) => c.committed))).sort((a, b) => a - b);
     const pots: PotSnapshot[] = [];
+    const refunds = new Map<string, number>();
     let previous = 0;
     for (const level of levels) {
       const participants = contributors.filter((c) => c.committed >= level);
       const amount = (level - previous) * participants.length;
+      if (amount <= 0) {
+        previous = level;
+        continue;
+      }
+
+      if (participants.length === 1) {
+        const lonePlayer = participants[0];
+        refunds.set(lonePlayer.playerId, (refunds.get(lonePlayer.playerId) ?? 0) + amount);
+        previous = level;
+        continue;
+      }
+
       const eligiblePlayerIds = participants
         .filter((c) => !c.folded)
         .sort((a, b) => a.seatIndex - b.seatIndex)
         .map((c) => c.playerId);
-      if (amount > 0 && eligiblePlayerIds.length > 0) {
+      if (eligiblePlayerIds.length > 0) {
         pots.push({
           amount,
           eligiblePlayerIds
@@ -875,7 +893,7 @@ export class HoldemTable {
       }
       previous = level;
     }
-    return pots;
+    return { pots, refunds };
   }
 
   private totalCommitted(): number {

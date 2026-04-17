@@ -1118,7 +1118,9 @@ export function App(): JSX.Element {
   const hasSizingActions = Boolean(betSizingAction);
   const nonSizingActions = (tableState?.legalActions ?? []).filter((action) => action.type !== "bet" && action.type !== "raise");
   const callAction = (tableState?.legalActions ?? []).find((action) => action.type === "call");
-  const toCallAmount = callAction?.toCall ?? 0;
+  const allInAction = (tableState?.legalActions ?? []).find((action) => action.type === "all-in");
+  const toCallAmount = callAction?.toCall ?? allInAction?.toCall ?? 0;
+  const callRequiresAllIn = !callAction && Boolean(allInAction && (allInAction.toCall ?? 0) > 0);
   const isMyTurn = Boolean(mySeat && actorSeat?.playerId === mySeat.playerId);
   const actionAmountMin = betSizingAction?.minAmount ?? 0;
   const actionAmountMax = Math.max(
@@ -1159,8 +1161,12 @@ export function App(): JSX.Element {
       return `${actionLabelMap[action.type]} ${action.toCall ?? 0}`;
     }
     if (action.type === "all-in") {
+      const currentStreetCommit = mySeat?.betThisStreet ?? 0;
       const allInTarget = action.maxAmount ?? action.minAmount ?? 0;
-      return `${actionLabelMap[action.type]} ${allInTarget}`;
+      const allInCommitNow = Math.max(0, allInTarget - currentStreetCommit);
+      return allInTarget > allInCommitNow
+        ? `${actionLabelMap[action.type]} ${allInCommitNow}（到 ${allInTarget}）`
+        : `${actionLabelMap[action.type]} ${allInCommitNow}`;
     }
     return actionLabelMap[action.type];
   };
@@ -1758,7 +1764,11 @@ export function App(): JSX.Element {
                         <div className="table-dock-row action-row">
                           <div className="action-row-head">
                             <span className="action-row-mode">
-                              {toCallAmount > 0 ? `当前需跟注 ${toCallAmount}` : "当前可自由下注"}
+                              {toCallAmount > 0
+                                ? callRequiresAllIn
+                                  ? `当前需全下 ${toCallAmount}`
+                                  : `当前需跟注 ${toCallAmount}`
+                                : "当前可自由下注"}
                             </span>
                             {isMyTurn ? (
                               <span className={countdownSec <= 5 ? "action-row-deadline danger" : "action-row-deadline"}>
