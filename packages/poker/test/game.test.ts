@@ -167,7 +167,7 @@ cases.push({
     ];
 
     table.act(players[0].id, { type: "all-in" });
-    table.act(players[1].id, { type: "all-in" });
+    table.act(players[1].id, { type: "call" });
 
     const history = table.getHandHistory(1)[0];
     assert.deepEqual(history.result.pots, [
@@ -318,6 +318,43 @@ cases.push({
     assert.equal(allInAction?.toCall, 40);
     assert.equal(allInAction?.minAmount, 50);
     assert.equal(allInAction?.maxAmount, 50);
+  }
+});
+
+cases.push({
+  name: "cannot raise when every other contender is already all-in",
+  run: () => {
+    const table = new HoldemTable({
+      name: "No Raise Against All-In Players",
+      smallBlind: 5,
+      bigBlind: 10,
+      maxSeats: 3,
+      minBuyIn: 50,
+      maxBuyIn: 500,
+      actionTimeoutSec: 20
+    });
+    table.joinSeat(players[0], 0, 60);
+    table.joinSeat(players[1], 1, 60);
+    table.joinSeat(players[2], 2, 200);
+
+    table.startHand();
+    table.act(players[0].id, { type: "all-in" });
+    table.act(players[1].id, { type: "all-in" });
+
+    const legal = table.getLegalActions(players[2].id);
+    assert.deepEqual(
+      legal.map((action) => action.type),
+      ["fold", "call"]
+    );
+
+    const callAction = legal.find((action) => action.type === "call");
+    assert.equal(callAction?.toCall, 50);
+
+    table.act(players[2].id, { type: "call" });
+
+    const state = table.getPublicState(players[2].id);
+    assert.equal(state.status, "waiting");
+    assert.equal(state.lastCompletedHand?.board.length, 5);
   }
 });
 

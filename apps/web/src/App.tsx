@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { shouldHighlightCompletedWinners, shouldShowCompletedWinners } from "./tableSummary";
 
 type ActionType = "fold" | "check" | "call" | "bet" | "raise" | "all-in";
 
@@ -106,6 +107,16 @@ interface BetBurst {
   delayMs: number;
 }
 
+interface BoardRevealStage {
+  from: number;
+  to: number;
+}
+
+interface BoardDisplaySource {
+  handId: string;
+  cards: Array<{ rank: number; suit: string }>;
+}
+
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 
 const cardLabel = (card: { rank: number; suit: string }): string => {
@@ -138,6 +149,9 @@ const actionClassMap: Record<ActionType, string> = {
 };
 
 const CHIP_DENOMS = [1000, 500, 100, 25, 5, 1];
+const BOARD_REVEAL_BOUNDARIES = [3, 4, 5];
+const BOARD_REVEAL_STAGE_GAP_MS = 900;
+const BOARD_REVEAL_CLEAR_MS = 1000;
 
 const chipBreakdown = (amount: number, denoms = [1000, 500, 100, 50, 25, 10, 5, 1]): Array<{ denom: number; count: number }> => {
   let remain = Math.max(0, Math.floor(amount));
@@ -150,6 +164,24 @@ const chipBreakdown = (amount: number, denoms = [1000, 500, 100, 50, 25, 10, 5, 
     }
   }
   return result;
+};
+
+const buildBoardRevealStages = (from: number, to: number): BoardRevealStage[] => {
+  if (to <= from) {
+    return [];
+  }
+  const stages: BoardRevealStage[] = [];
+  let current = from;
+  for (const boundary of BOARD_REVEAL_BOUNDARIES) {
+    if (boundary > current && boundary <= to) {
+      stages.push({ from: current, to: boundary });
+      current = boundary;
+    }
+  }
+  if (current < to) {
+    stages.push({ from: current, to });
+  }
+  return stages;
 };
 
 const seatAngleDeg = (index: number, totalSeats: number): number => {
@@ -350,6 +382,7 @@ export function App(): JSX.Element {
   const [dealBursts, setDealBursts] = useState<DealBurst[]>([]);
   const [betBursts, setBetBursts] = useState<BetBurst[]>([]);
   const [boardDealSlots, setBoardDealSlots] = useState<number[]>([]);
+  const [visibleBoardLength, setVisibleBoardLength] = useState(0);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [adminQuery, setAdminQuery] = useState("");
   const [adminNewName, setAdminNewName] = useState("");
@@ -369,7 +402,7 @@ export function App(): JSX.Element {
   const prevStreetBetRef = useRef<Record<number, number>>({});
   const dealClearTimerRef = useRef<number | null>(null);
   const betClearTimerRef = useRef<number | null>(null);
-  const boardDealClearTimerRef = useRef<number | null>(null);
+  const boardRevealTimerRefs = useRef<number[]>([]);
   const prevBoardStateRef = useRef<{ handId: string; boardLen: number }>({ handId: "", boardLen: 0 });
 
   const clearDealTimer = (): void => {
@@ -387,11 +420,15 @@ export function App(): JSX.Element {
   };
 
   const clearBoardDealTimer = (): void => {
-    if (boardDealClearTimerRef.current !== null) {
-      window.clearTimeout(boardDealClearTimerRef.current);
-      boardDealClearTimerRef.current = null;
+    if (boardRevealTimerRefs.current.length > 0) {
+      for (const timerId of boardRevealTimerRefs.current) {
+        window.clearTimeout(timerId);
+      }
+      boardRevealTimerRefs.current = [];
     }
   };
+
+  useEffect(() => () => clearBoardDealTimer(), []);
 
   const authHeaders = useMemo(
     () => ({
@@ -714,39 +751,67 @@ export function App(): JSX.Element {
   }, [tableState?.hand?.version, tableState?.status, tableState?.bigBlind, tableState?.seats, tableState?.hand?.handId]);
 
   useEffect(() => {
-    const hand = tableState?.hand;
-    if (!hand || tableState?.status !== "active") {
+    const activeHand = tableState?.status === "active" ? tableState.hand : undefined;
+    const completedHand =
+      tableState?.status === "waiting" && (tableState?.hand?.board.length ?? 0) === 0 && (tableState?.lastCompletedHand?.board.length ?? 0) > 0
+        ? tableState.lastCompletedHand
+        : undefined;
+    const boardSource: BoardDisplaySource | null = activeHand
+      ? { handId: activeHand.handId, cards: activeHand.board }
+      : completedHand
+        ? { handId: completedHand.handId, cards: completedHand.board }
+        : null;
+
+    if (!boardSource) {
       prevBoardStateRef.current = { handId: "", boardLen: 0 };
+      setVisibleBoardLength(0);
       setBoardDealSlots([]);
       clearBoardDealTimer();
       return;
     }
 
-    const nextLen = hand.board.length;
+    const nextLen = boardSource.cards.length;
     const prev = prevBoardStateRef.current;
-    const handChanged = prev.handId !== hand.handId;
+    const handChanged = prev.handId !== boardSource.handId;
 
     if (handChanged && prev.handId === "") {
-      prevBoardStateRef.current = { handId: hand.handId, boardLen: nextLen };
+      prevBoardStateRef.current = { handId: boardSource.handId, boardLen: nextLen };
+      setVisibleBoardLength(nextLen);
       return;
     }
 
     const prevLen = handChanged ? 0 : prev.boardLen;
-    if (nextLen > prevLen) {
-      const slots = Array.from({ length: nextLen - prevLen }, (_, idx) => prevLen + idx);
-      setBoardDealSlots(slots);
-      clearBoardDealTimer();
-      boardDealClearTimerRef.current = window.setTimeout(
-        () => {
-          setBoardDealSlots([]);
-          boardDealClearTimerRef.current = null;
-        },
-        1000 + slots.length * 130
-      );
+    if (handChanged) {
+      setVisibleBoardLength(0);
     }
 
-    prevBoardStateRef.current = { handId: hand.handId, boardLen: nextLen };
-  }, [tableState?.status, tableState?.hand?.handId, tableState?.hand?.board.length]);
+    if (nextLen > prevLen) {
+      const stages = buildBoardRevealStages(prevLen, nextLen);
+      clearBoardDealTimer();
+
+      if (stages.length > 0) {
+        stages.forEach((stage, index) => {
+          const delay = index * BOARD_REVEAL_STAGE_GAP_MS;
+          const timerId = window.setTimeout(() => {
+            setVisibleBoardLength(stage.to);
+            setBoardDealSlots(Array.from({ length: stage.to - stage.from }, (_, slotIdx) => stage.from + slotIdx));
+          }, delay);
+          boardRevealTimerRefs.current.push(timerId);
+        });
+
+        const clearDelay = (stages.length - 1) * BOARD_REVEAL_STAGE_GAP_MS + BOARD_REVEAL_CLEAR_MS;
+        const clearTimerId = window.setTimeout(() => {
+          setBoardDealSlots([]);
+        }, clearDelay);
+        boardRevealTimerRefs.current.push(clearTimerId);
+      }
+    } else {
+      setVisibleBoardLength(nextLen);
+      setBoardDealSlots([]);
+    }
+
+    prevBoardStateRef.current = { handId: boardSource.handId, boardLen: nextLen };
+  }, [tableState?.status, tableState?.hand?.handId, tableState?.hand?.board.length, tableState?.lastCompletedHand?.handId, tableState?.lastCompletedHand?.board.length]);
 
   const loginGuest = async (): Promise<void> => {
     if (loginBusy) {
@@ -1093,7 +1158,8 @@ export function App(): JSX.Element {
   const currentBoard = tableState?.hand?.board ?? [];
   const completedBoard = tableState?.lastCompletedHand?.board ?? [];
   const showingCompletedBoard = tableState?.status === "waiting" && currentBoard.length === 0 && completedBoard.length > 0;
-  const board = currentBoard.length > 0 ? currentBoard : showingCompletedBoard ? completedBoard : [];
+  const showingCompletedWinners = shouldShowCompletedWinners(tableState);
+  const board = currentBoard.length > 0 ? currentBoard.slice(0, visibleBoardLength) : showingCompletedBoard ? completedBoard : [];
   const lastCompletedWinners = tableState?.lastCompletedHand?.result?.winners ?? [];
   const actorSeatIndex = tableState?.hand?.currentActorSeat ?? null;
   const dealerSeatIndex = tableState?.hand?.dealerSeat ?? null;
@@ -1154,7 +1220,7 @@ export function App(): JSX.Element {
     .map((winner) => `${winnerNameById.get(winner.playerId) ?? `玩家${winner.playerId.slice(0, 6)}`} +${winner.amount}`)
     .join(" · ");
   const highlightedWinnerPlayerIds = new Set(
-    showingCompletedBoard ? lastCompletedWinners.map((winner) => winner.playerId) : []
+    shouldHighlightCompletedWinners(tableState) ? lastCompletedWinners.map((winner) => winner.playerId) : []
   );
   const nonSizingActionText = (action: LegalAction): string => {
     if (action.type === "call") {
@@ -1692,7 +1758,7 @@ export function App(): JSX.Element {
                           <span className="board-empty">(空)</span>
                         )}
                       </div>
-                      {showingCompletedBoard && lastWinnerText ? (
+                      {showingCompletedWinners && lastWinnerText ? (
                         <div className="winner-strip">
                           <span className="winner-title">上一手赢家</span>
                           <span className="winner-values">{lastWinnerText}</span>

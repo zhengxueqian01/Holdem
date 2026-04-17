@@ -445,13 +445,14 @@ export class HoldemTable {
     const toCall = hand.currentBet - seat.betThisStreet;
     const actualToCall = Math.max(0, Math.min(toCall, seat.stack));
     const maxStreetTarget = seat.betThisStreet + seat.stack;
+    const hasResponsiveOpponent = this.activeNotAllInSeats().some((seatIndex) => seatIndex !== seat.seatIndex);
     const legal: LegalAction[] = [];
 
     legal.push({ type: "fold", toCall: actualToCall });
 
     if (toCall <= 0) {
       legal.push({ type: "check", toCall: 0 });
-      if (seat.stack > 0) {
+      if (seat.stack > 0 && hasResponsiveOpponent) {
         if (hand.currentBet === 0) {
           const minBet = Math.min(maxStreetTarget, this.bigBlind);
           legal.push({
@@ -484,7 +485,7 @@ export class HoldemTable {
         if (!callIsAllIn) {
           legal.push({ type: "call", toCall: actualToCall });
         }
-        if (maxStreetTarget > hand.currentBet) {
+        if (hasResponsiveOpponent && maxStreetTarget > hand.currentBet) {
           const minRaiseTarget = hand.currentBet + hand.minRaise;
           if (maxStreetTarget >= minRaiseTarget) {
             legal.push({
@@ -495,12 +496,14 @@ export class HoldemTable {
             });
           }
         }
-        legal.push({
-          type: "all-in",
-          minAmount: maxStreetTarget,
-          maxAmount: maxStreetTarget,
-          toCall: actualToCall
-        });
+        if (callIsAllIn || hasResponsiveOpponent) {
+          legal.push({
+            type: "all-in",
+            minAmount: maxStreetTarget,
+            maxAmount: maxStreetTarget,
+            toCall: actualToCall
+          });
+        }
       }
     }
 
@@ -635,7 +638,7 @@ export class HoldemTable {
       seat.betThisStreet = 0;
       seat.actedThisStreet = seat.allIn;
     }
-    hand.currentActorSeat = this.firstActorPostflop();
+    hand.currentActorSeat = this.activeNotAllInSeats().length <= 1 ? null : this.firstActorPostflop();
     hand.version += 1;
     this.maybeFastForwardIfNoActor();
   }
@@ -649,7 +652,7 @@ export class HoldemTable {
       return;
     }
 
-    while (this.status === "active" && this.hand && this.hand.street !== "river" && this.activeNotAllInSeats().length === 0) {
+    while (this.status === "active" && this.hand && this.hand.street !== "river" && this.activeNotAllInSeats().length <= 1) {
       this.advanceStreetOrShowdown();
       if (!this.hand || this.status !== "active") {
         return;
@@ -659,7 +662,7 @@ export class HoldemTable {
       }
     }
 
-    if (this.status === "active" && this.hand && this.hand.street === "river" && this.activeNotAllInSeats().length === 0) {
+    if (this.status === "active" && this.hand && this.hand.street === "river" && this.activeNotAllInSeats().length <= 1) {
       this.finishShowdown();
     }
   }
