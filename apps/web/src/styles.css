@@ -1051,6 +1051,10 @@ label {
 }
 
 .winner-strip {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 12px);
+  transform: translateX(-50%);
   display: grid;
   justify-items: center;
   gap: 4px;
@@ -1058,6 +1062,7 @@ label {
   border: 1px solid rgba(251, 191, 36, 0.35);
   background: rgba(120, 53, 15, 0.28);
   padding: 6px 10px;
+  white-space: nowrap;
 }
 
 .winner-title {
