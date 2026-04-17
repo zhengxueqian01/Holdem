@@ -2,7 +2,7 @@
 
 Authoritative online no-limit Texas Hold'em MVP with realtime table sync.
 
-[中文说明](./README.zh-CN.md)
+[中文](./README.zh-CN.md)
 
 ## Workspace
 
