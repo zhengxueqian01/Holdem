@@ -1164,7 +1164,14 @@ export function App(): JSX.Element {
   const completedBoard = tableState?.lastCompletedHand?.board ?? [];
   const showingCompletedBoard = tableState?.status === "waiting" && currentBoard.length === 0 && completedBoard.length > 0;
   const showingCompletedWinners = shouldShowCompletedWinners(tableState);
-  const board = currentBoard.length > 0 ? currentBoard.slice(0, visibleBoardLength) : showingCompletedBoard ? completedBoard : [];
+  const completedBoardRevealDone =
+    !showingCompletedBoard || (visibleBoardLength >= completedBoard.length && boardDealSlots.length === 0);
+  const board =
+    currentBoard.length > 0
+      ? currentBoard.slice(0, visibleBoardLength)
+      : showingCompletedBoard
+        ? completedBoard.slice(0, visibleBoardLength)
+        : [];
   const lastCompletedWinners = tableState?.lastCompletedHand?.result?.winners ?? [];
   const actorSeatIndex = tableState?.hand?.currentActorSeat ?? null;
   const dealerSeatIndex = tableState?.hand?.dealerSeat ?? null;
@@ -1225,7 +1232,9 @@ export function App(): JSX.Element {
     .map((winner) => `${winnerNameById.get(winner.playerId) ?? `玩家${winner.playerId.slice(0, 6)}`} +${winner.amount}`)
     .join(" · ");
   const highlightedWinnerPlayerIds = new Set(
-    shouldHighlightCompletedWinners(tableState) ? lastCompletedWinners.map((winner) => winner.playerId) : []
+    shouldHighlightCompletedWinners(tableState) && completedBoardRevealDone
+      ? lastCompletedWinners.map((winner) => winner.playerId)
+      : []
   );
   const nonSizingActionText = (action: LegalAction): string => {
     if (action.type === "call") {
@@ -1742,7 +1751,7 @@ export function App(): JSX.Element {
                         {board.length ? (
                           board.map((card, idx) => {
                             const dealOrder = boardDealOrder.get(idx);
-                            const dealingClass = dealOrder !== undefined && currentBoard.length > 0 ? "dealing" : "";
+                            const dealingClass = dealOrder !== undefined ? "dealing" : "";
                             return (
                               <span
                                 key={`${card.rank}-${card.suit}-${idx}`}
@@ -1763,7 +1772,7 @@ export function App(): JSX.Element {
                           <span className="board-empty">(空)</span>
                         )}
                       </div>
-                      {showingCompletedWinners && lastWinnerText ? (
+                      {showingCompletedWinners && completedBoardRevealDone && lastWinnerText ? (
                         <div className="winner-strip">
                           <span className="winner-title">上一手赢家</span>
                           <span className="winner-values">{lastWinnerText}</span>
