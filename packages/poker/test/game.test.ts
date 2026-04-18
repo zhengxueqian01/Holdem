@@ -322,6 +322,40 @@ cases.push({
 });
 
 cases.push({
+  name: "deep stack all-in is capped at the biggest live opponent stack",
+  run: () => {
+    const table = new HoldemTable({
+      name: "Deep Stack Effective All-In",
+      smallBlind: 5,
+      bigBlind: 10,
+      maxSeats: 2,
+      minBuyIn: 50,
+      maxBuyIn: 1000,
+      actionTimeoutSec: 20
+    });
+    table.joinSeat(players[0], 0, 100);
+    table.joinSeat(players[1], 1, 400);
+
+    table.startHand();
+    table.act(players[0].id, { type: "call" });
+
+    const legal = table.getLegalActions(players[1].id);
+    const allInAction = legal.find((action) => action.type === "all-in");
+    assert.equal(allInAction?.toCall, 0);
+    assert.equal(allInAction?.minAmount, 100);
+    assert.equal(allInAction?.maxAmount, 100);
+
+    table.act(players[1].id, { type: "all-in" });
+
+    const state = table.getPublicState(players[1].id);
+    const deepSeat = state.seats[1];
+    assert.equal(deepSeat?.betThisStreet, 100);
+    assert.equal(deepSeat?.stack, 300);
+    assert.equal(deepSeat?.allIn, false);
+  }
+});
+
+cases.push({
   name: "cannot raise when every other contender is already all-in",
   run: () => {
     const table = new HoldemTable({

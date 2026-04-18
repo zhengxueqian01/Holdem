@@ -384,7 +384,7 @@ export class HoldemTable {
         if (seat.stack <= 0) {
           throw new Error("No chips left");
         }
-        const target = seat.betThisStreet + seat.stack;
+        const target = legalAction.maxAmount ?? this.maxAllInStreetTarget(seat);
         this.commitToStreetTarget(seat, target);
         if (target > hand.currentBet) {
           const raiseDelta = target - hand.currentBet;
@@ -445,6 +445,7 @@ export class HoldemTable {
     const toCall = hand.currentBet - seat.betThisStreet;
     const actualToCall = Math.max(0, Math.min(toCall, seat.stack));
     const maxStreetTarget = seat.betThisStreet + seat.stack;
+    const maxAllInTarget = this.maxAllInStreetTarget(seat);
     const hasResponsiveOpponent = this.activeNotAllInSeats().some((seatIndex) => seatIndex !== seat.seatIndex);
     const legal: LegalAction[] = [];
 
@@ -474,8 +475,8 @@ export class HoldemTable {
         }
         legal.push({
           type: "all-in",
-          minAmount: maxStreetTarget,
-          maxAmount: maxStreetTarget,
+          minAmount: maxAllInTarget,
+          maxAmount: maxAllInTarget,
           toCall: 0
         });
       }
@@ -499,8 +500,8 @@ export class HoldemTable {
         if (callIsAllIn || hasResponsiveOpponent) {
           legal.push({
             type: "all-in",
-            minAmount: maxStreetTarget,
-            maxAmount: maxStreetTarget,
+            minAmount: maxAllInTarget,
+            maxAmount: maxAllInTarget,
             toCall: actualToCall
           });
         }
@@ -901,6 +902,16 @@ export class HoldemTable {
 
   private totalCommitted(): number {
     return this.seats.reduce((sum, seat) => sum + (seat?.committed ?? 0), 0);
+  }
+
+  private maxAllInStreetTarget(actor: SeatState): number {
+    const ownMaxStreetTarget = actor.betThisStreet + actor.stack;
+    const maxOpponentStreetTarget = this.seats
+      .filter((seat): seat is SeatState => Boolean(seat))
+      .filter((seat) => seat.seatIndex !== actor.seatIndex && seat.inHand && !seat.folded)
+      .reduce((maxTarget, seat) => Math.max(maxTarget, seat.betThisStreet + seat.stack), 0);
+
+    return Math.min(ownMaxStreetTarget, Math.max(actor.betThisStreet, maxOpponentStreetTarget));
   }
 
   private contenderSeats(): number[] {
