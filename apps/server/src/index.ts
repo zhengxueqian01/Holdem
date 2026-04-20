@@ -43,6 +43,7 @@ interface Session {
 interface ClientContext {
   session: Session;
   subscriptions: Set<string>;
+  lobbySubscribed: boolean;
 }
 
 interface AdminUserView {
@@ -93,6 +94,7 @@ const sessions = new Map<string, Session>();
 const tables = new Map<string, HoldemTable>();
 const clients = new Map<WebSocket, ClientContext>();
 const tableSubscribers = new Map<string, Set<WebSocket>>();
+const lobbySubscribers = new Set<WebSocket>();
 const tableTimeouts = new Map<string, NodeJS.Timeout>();
 
 const authGuestSchema = z.object({
@@ -288,6 +290,27 @@ const sendJson = (ws: WebSocket, payload: unknown): void => {
   }
 };
 
+const lobbySummary = () => ({
+  tables: Array.from(tables.values()).map((table) => table.summary())
+});
+
+const subscribeSocketToLobby = (ws: WebSocket): void => {
+  const ctx = clients.get(ws);
+  if (!ctx) {
+    return;
+  }
+  ctx.lobbySubscribed = true;
+  lobbySubscribers.add(ws);
+};
+
+const unsubscribeSocketFromLobby = (ws: WebSocket): void => {
+  const ctx = clients.get(ws);
+  if (ctx) {
+    ctx.lobbySubscribed = false;
+  }
+  lobbySubscribers.delete(ws);
+};
+
 const subscribeSocketToTable = (ws: WebSocket, tableId: string): void => {
   const ctx = clients.get(ws);
   if (!ctx) {
@@ -330,6 +353,19 @@ const broadcastTableState = (tableId: string): void => {
     }
     const state = table.getPublicState(ctx.session.playerId);
     sendJson(ws, { type: "table_state", tableId, state });
+  }
+};
+
+const broadcastLobbySummary = (): void => {
+  if (lobbySubscribers.size === 0) {
+    return;
+  }
+  const payload = {
+    type: "lobby_summary",
+    ...lobbySummary()
+  };
+  for (const ws of lobbySubscribers) {
+    sendJson(ws, payload);
   }
 };
 
@@ -379,6 +415,7 @@ const scheduleTurnTimeout = (tableId: string): void => {
     try {
       current.act(actorNow, action);
       broadcastTableState(tableId);
+      broadcastLobbySummary();
       scheduleTurnTimeout(tableId);
     } catch {
       // Ignore timeout race if state already advanced.
@@ -399,6 +436,7 @@ const closeTable = (tableId: string, message = "牌桌已关闭"): boolean => {
   }
   tableSubscribers.delete(tableId);
   tables.delete(tableId);
+  broadcastLobbySummary();
   return true;
 };
 
@@ -621,9 +659,7 @@ app.delete("/api/admin/tables/:tableId", (req, res) => {
 });
 
 app.get("/api/tables", (_req, res) => {
-  res.json({
-    tables: Array.from(tables.values()).map((table) => table.summary())
-  });
+  res.json(lobbySummary());
 });
 
 app.post("/api/tables", (req, res) => {
@@ -640,6 +676,7 @@ app.post("/api/tables", (req, res) => {
     const table = new HoldemTable(body);
     tables.set(table.id, table);
     res.status(201).json({ table: table.getPublicState(req.session?.playerId ?? null) });
+    broadcastLobbySummary();
   } catch (error) {
     res.status(400).json({ error: asErrorMessage(error) });
   }
@@ -667,6 +704,7 @@ app.post("/api/tables/:tableId/seats/join", (req, res) => {
     const state = table.getPublicState(session.playerId);
     res.status(201).json({ table: state });
     broadcastTableState(table.id);
+    broadcastLobbySummary();
   } catch (error) {
     res.status(400).json({ error: asErrorMessage(error) });
   }
@@ -679,6 +717,7 @@ app.post("/api/tables/:tableId/seats/leave", (req, res) => {
     table.leaveSeat(session.playerId);
     res.json({ table: table.getPublicState(session.playerId) });
     broadcastTableState(table.id);
+    broadcastLobbySummary();
     scheduleTurnTimeout(table.id);
   } catch (error) {
     res.status(400).json({ error: asErrorMessage(error) });
@@ -696,6 +735,7 @@ app.post("/api/tables/:tableId/seats/switch", (req, res) => {
     table.switchSeat(session.playerId, body.seatIndex);
     res.json({ table: table.getPublicState(session.playerId) });
     broadcastTableState(table.id);
+    broadcastLobbySummary();
   } catch (error) {
     res.status(400).json({ error: asErrorMessage(error) });
   }
@@ -726,6 +766,7 @@ app.post("/api/tables/:tableId/start-hand", (req, res) => {
     const state = table.startHand();
     res.json({ table: table.getPublicState(session.playerId), started: state.hand?.handId });
     broadcastTableState(table.id);
+    broadcastLobbySummary();
     scheduleTurnTimeout(table.id);
   } catch (error) {
     res.status(400).json({ error: asErrorMessage(error) });
@@ -740,6 +781,7 @@ app.post("/api/tables/:tableId/actions", (req, res) => {
     const state = table.act(session.playerId, body);
     res.json({ table: state });
     broadcastTableState(table.id);
+    broadcastLobbySummary();
     scheduleTurnTimeout(table.id);
   } catch (error) {
     res.status(400).json({ error: asErrorMessage(error) });
@@ -773,6 +815,7 @@ const onActionMessage = (ctx: ClientContext, payload: { tableId: string; action:
   const table = ensureTable(payload.tableId);
   table.act(ctx.session.playerId, payload.action);
   broadcastTableState(table.id);
+  broadcastLobbySummary();
   scheduleTurnTimeout(table.id);
 };
 
@@ -791,7 +834,7 @@ server.on("upgrade", (request, socket, head) => {
   }
 
   wss.handleUpgrade(request, socket, head, (ws) => {
-    clients.set(ws, { session, subscriptions: new Set<string>() });
+    clients.set(ws, { session, subscriptions: new Set<string>(), lobbySubscribed: false });
     sendJson(ws, {
       type: "connected",
       player: {
@@ -806,6 +849,18 @@ server.on("upgrade", (request, socket, head) => {
         const text = raw.toString();
         const data = JSON.parse(text) as Record<string, unknown>;
         const type = data.type;
+        if (type === "subscribe_lobby") {
+          subscribeSocketToLobby(ws);
+          sendJson(ws, {
+            type: "lobby_summary",
+            ...lobbySummary()
+          });
+          return;
+        }
+        if (type === "unsubscribe_lobby") {
+          unsubscribeSocketFromLobby(ws);
+          return;
+        }
         if (type === "subscribe_table") {
           const tableId = String(data.tableId ?? "");
           if (!tableId) {
@@ -852,6 +907,9 @@ server.on("upgrade", (request, socket, head) => {
     ws.on("close", () => {
       const ctx = clients.get(ws);
       if (ctx) {
+        if (ctx.lobbySubscribed) {
+          unsubscribeSocketFromLobby(ws);
+        }
         for (const tableId of ctx.subscriptions) {
           unsubscribeSocketFromTable(ws, tableId);
         }
